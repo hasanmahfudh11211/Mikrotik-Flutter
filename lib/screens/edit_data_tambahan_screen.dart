@@ -1,0 +1,489 @@
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../widgets/gradient_container.dart';
+import '../widgets/custom_snackbar.dart';
+import 'package:image/image.dart' as img;
+import '../services/api_service.dart';
+
+class EditDataTambahanScreen extends StatefulWidget {
+  final String username;
+  final Map<String, dynamic> currentData;
+
+  const EditDataTambahanScreen({
+    Key? key,
+    required this.username,
+    required this.currentData,
+  }) : super(key: key);
+
+  @override
+  State<EditDataTambahanScreen> createState() => _EditDataTambahanScreenState();
+}
+
+class _EditDataTambahanScreenState extends State<EditDataTambahanScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _waController = TextEditingController();
+  final _mapsController = TextEditingController();
+  XFile? _pickedImage;
+  bool _isLoading = false;
+  String? _error;
+  File? _imageFile;
+  List<int>? _compressedImageBytes;
+  String? _currentImageUrl;
+
+  // State untuk ODP
+  List<Map<String, dynamic>> _odpList = [];
+  int? _selectedOdpId;
+  bool _isLoadingOdp = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Inisialisasi data yang sudah ada
+    _waController.text = widget.currentData['wa'] ?? '';
+    _mapsController.text = widget.currentData['maps'] ?? '';
+    _currentImageUrl = widget.currentData['foto'];
+    
+    // Set ODP yang sudah terpilih jika ada
+    final odpId = widget.currentData['odp_id'];
+    if (odpId != null) {
+      // Pastikan tipenya int, jika dari json bisa jadi String atau int
+      if (odpId is String) {
+        _selectedOdpId = int.tryParse(odpId);
+      } else if (odpId is int) {
+        _selectedOdpId = odpId;
+      }
+    }
+
+    _fetchOdpList();
+  }
+
+  @override
+  void dispose() {
+    _waController.dispose();
+    _mapsController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchOdpList() async {
+    try {
+      final response = await http.get(Uri.parse('${ApiService.baseUrl}/odp_operations.php'));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          setState(() {
+            _odpList = List<Map<String, dynamic>>.from(data['odp_list']);
+            // Pastikan _selectedOdpId valid, bandingkan sebagai integer
+            if (_selectedOdpId != null && !_odpList.any((odp) => int.tryParse(odp['id'].toString()) == _selectedOdpId)) {
+                _selectedOdpId = null;
+            }
+          });
+        }
+      }
+    } catch (e) {
+      // Handle error
+    } finally {
+      setState(() => _isLoadingOdp = false);
+    }
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+      
+      if (image != null) {
+        // Compress image
+        final File imageFile = File(image.path);
+        final img.Image? originalImage = img.decodeImage(await imageFile.readAsBytes());
+        
+        if (originalImage != null) {
+          // Resize and compress image
+          final img.Image resizedImage = img.copyResize(
+            originalImage,
+            width: 800, // Max width
+            height: (800 * originalImage.height / originalImage.width).round(),
+          );
+          
+          final List<int> compressedBytes = img.encodeJpg(resizedImage, quality: 85);
+          
+          setState(() {
+            _pickedImage = image;
+            _imageFile = imageFile;
+            _compressedImageBytes = compressedBytes;
+          });
+        }
+      }
+    } catch (e) {
+      CustomSnackbar.show(
+        context: context,
+        message: 'Gagal memilih gambar',
+        additionalInfo: e.toString(),
+        isSuccess: false,
+      );
+    }
+  }
+
+  Future<void> _saveChanges() async {
+    if (!_formKey.currentState!.validate()) return;
+    // Tampilkan dialog konfirmasi sebelum simpan
+    final konfirmasi = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade100,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.help_outline, color: Colors.blue, size: 36),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                'Konfirmasi',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Apakah data sudah benar?',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, color: Colors.black87),
+              ),
+              const SizedBox(height: 28),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.grey[700],
+                        side: BorderSide(color: Colors.grey.shade400),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('BATAL', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue.shade800,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('SIMPAN', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (konfirmasi != true) return; // Jika batal, tidak lanjut simpan
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      String? base64Image;
+      if (_compressedImageBytes != null) {
+        // Convert bytes to base64 string
+        base64Image = 'data:image/jpeg;base64,' + base64Encode(_compressedImageBytes!);
+      }
+
+      final result = await ApiService.updateUserData(
+        username: widget.username,
+        wa: _waController.text.trim(),
+        maps: _mapsController.text.trim(),
+        foto: base64Image,
+        odpId: _selectedOdpId,
+      );
+
+      if (!mounted) return;
+
+      CustomSnackbar.show(
+        context: context,
+        message: 'Data berhasil diupdate',
+        additionalInfo: 'Perubahan telah disimpan',
+        isSuccess: true,
+      );
+      Navigator.of(context).pop(true); // Return true to indicate success
+    } catch (e) {
+      setState(() => _error = e.toString());
+      CustomSnackbar.show(
+        context: context,
+        message: 'Gagal menyimpan perubahan',
+        additionalInfo: e.toString(),
+        isSuccess: false,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GradientContainer(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: const Text(
+            'Edit Data Tambahan',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          iconTheme: const IconThemeData(color: Colors.white),
+          centerTitle: true,
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Info Card
+                Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Username: ${widget.username}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Form Fields
+                Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // WhatsApp Field
+                        TextFormField(
+                          controller: _waController,
+                          decoration: InputDecoration(
+                            labelText: 'Nomor WhatsApp',
+                            prefixIcon: const Icon(Icons.phone),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          keyboardType: TextInputType.phone,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Maps Field
+                        TextFormField(
+                          controller: _mapsController,
+                          decoration: InputDecoration(
+                            labelText: 'Link Google Maps',
+                            prefixIcon: const Icon(Icons.location_on),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // ODP Dropdown
+                        const Text(
+                          'Hubungkan ke ODP',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        _isLoadingOdp
+                            ? const Center(child: CircularProgressIndicator())
+                            : DropdownButtonFormField<int>(
+                                value: _selectedOdpId,
+                                isExpanded: true,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: Colors.white.withOpacity(0.9),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  prefixIcon: const Icon(Icons.device_hub),
+                                  hintText: 'Pilih ODP',
+                                ),
+                                items: _odpList.map((odp) {
+                                  return DropdownMenuItem<int>(
+                                    // Pastikan value adalah integer
+                                    value: int.parse(odp['id'].toString()),
+                                    child: Text(odp['name']),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedOdpId = value;
+                                  });
+                                },
+                              ),
+
+                        const SizedBox(height: 16),
+
+                        // Image Picker
+                        const Text(
+                          'Foto Lokasi',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Center(
+                          child: Column(
+                            children: [
+                              if (_pickedImage != null) ...[
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.file(
+                                    File(_pickedImage!.path),
+                                    height: 200,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ] else if (_currentImageUrl != null && _currentImageUrl!.isNotEmpty) ...[
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.network(
+                                    _currentImageUrl!,
+                                    height: 200,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        height: 200,
+                                        width: double.infinity,
+                                        color: Colors.grey[300],
+                                        child: const Icon(
+                                          Icons.error_outline,
+                                          size: 50,
+                                          color: Colors.grey,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: 16),
+                              ElevatedButton.icon(
+                                onPressed: _isLoading ? null : _pickImage,
+                                icon: const Icon(Icons.photo_camera),
+                                label: Text(_pickedImage != null || (_currentImageUrl != null && _currentImageUrl!.isNotEmpty)
+                                    ? 'Ganti Foto'
+                                    : 'Pilih Foto'),
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Save Button
+                ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _saveChanges,
+                  icon: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Icon(Icons.save, color: Colors.white),
+                  label: Text(
+                    _isLoading ? 'MENYIMPAN...' : 'SIMPAN PERUBAHAN',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.shade700,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+
+                if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: Text(
+                      _error!,
+                      style: const TextStyle(color: Colors.red),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
