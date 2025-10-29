@@ -97,9 +97,10 @@ class _PPPProfilePageState extends State<PPPProfilePage> {
   }
 
   void _showSortMenu() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -111,7 +112,7 @@ class _PPPProfilePageState extends State<PPPProfilePage> {
             height: 4,
             margin: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.grey.shade300,
+              color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -120,20 +121,26 @@ class _PPPProfilePageState extends State<PPPProfilePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Sort by',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
                 const SizedBox(height: 16),
                 ...List.generate(
                   _sortOptions.length,
                   (index) => ListTile(
-                    title: Text(_sortOptions[index]),
+                    title: Text(
+                      _sortOptions[index],
+                      style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
                     trailing: _sortBy == _sortOptions[index]
-                        ? const Icon(Icons.check, color: Colors.blue)
+                        ? Icon(Icons.check, color: isDark ? Colors.blue.shade300 : Colors.blue)
                         : null,
                     onTap: () {
                       setState(() => _sortBy = _sortOptions[index]);
@@ -157,6 +164,7 @@ class _PPPProfilePageState extends State<PPPProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GradientContainer(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -192,32 +200,32 @@ class _PPPProfilePageState extends State<PPPProfilePage> {
                     child: Container(
                       height: 48,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: isDark ? const Color(0xFF2D2D2D) : Colors.white,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: TextField(
                         controller: _searchController,
                         onChanged: (value) => setState(() => _searchQuery = value),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: Colors.black87,
+                          color: isDark ? Colors.white : Colors.black87,
                         ),
                         decoration: InputDecoration(
                           hintText: 'Search profiles...',
                           hintStyle: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey.shade600,
+                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                           ),
                           prefixIcon: Icon(
                             Icons.search,
-                            color: Colors.grey.shade600,
+                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                             size: 20,
                           ),
                           suffixIcon: _searchQuery.isNotEmpty
                               ? IconButton(
                                   icon: Icon(
                                     Icons.clear,
-                                    color: Colors.grey.shade600,
+                                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                                     size: 20,
                                   ),
                                   onPressed: () {
@@ -237,13 +245,15 @@ class _PPPProfilePageState extends State<PPPProfilePage> {
                     height: 48,
                     width: 48,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: isDark ? const Color(0xFF2D2D2D) : Colors.white,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.filter_list),
+                      icon: Icon(
+                        Icons.filter_list,
+                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                      ),
                       onPressed: _showSortMenu,
-                      color: Colors.grey.shade600,
                       iconSize: 20,
                     ),
                   ),
@@ -273,7 +283,7 @@ class _PPPProfilePageState extends State<PPPProfilePage> {
                           Icon(
                             _searchQuery.isEmpty ? Icons.account_box_outlined : Icons.search_off,
                             size: 64, 
-                            color: Colors.white.withOpacity(0.6),
+                            color: isDark ? Colors.white.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.6),
                           ),
                           const SizedBox(height: 16),
                           Text(
@@ -282,7 +292,7 @@ class _PPPProfilePageState extends State<PPPProfilePage> {
                                 : 'No matching profiles found',
                             style: TextStyle(
                               fontSize: 18,
-                              color: Colors.white.withOpacity(0.8),
+                              color: isDark ? Colors.white.withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.8),
                             ),
                           ),
                         ],
@@ -300,6 +310,7 @@ class _PPPProfilePageState extends State<PPPProfilePage> {
                       final rateLimit = profile['rate-limit']?.toString();
 
                       return Card(
+                        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                         margin: const EdgeInsets.only(bottom: 8),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -343,9 +354,10 @@ class _PPPProfilePageState extends State<PPPProfilePage> {
                                       Expanded(
                                         child: Text(
                                           profile['name']?.toString() ?? 'Unnamed Profile',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.w500,
+                                            color: isDark ? Colors.white : Colors.black87,
                                           ),
                                         ),
                                       ),
@@ -360,9 +372,9 @@ class _PPPProfilePageState extends State<PPPProfilePage> {
                                         vertical: 6,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: Colors.grey.shade50,
+                                        color: isDark ? const Color(0xFF2D2D2D) : Colors.grey.shade50,
                                         border: Border.all(
-                                          color: Colors.grey.shade200,
+                                          color: isDark ? Colors.grey.shade700 : Colors.grey.shade200,
                                         ),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
@@ -372,7 +384,7 @@ class _PPPProfilePageState extends State<PPPProfilePage> {
                                           Icon(
                                             Icons.speed_rounded,
                                             size: 14,
-                                            color: Colors.grey.shade700,
+                                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
                                           ),
                                           const SizedBox(width: 6),
                                           Text(
@@ -380,7 +392,7 @@ class _PPPProfilePageState extends State<PPPProfilePage> {
                                             style: TextStyle(
                                               fontSize: 13,
                                               fontWeight: FontWeight.w500,
-                                              color: Colors.grey.shade700,
+                                              color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
                                             ),
                                           ),
                                         ],
@@ -405,6 +417,7 @@ class _PPPProfilePageState extends State<PPPProfilePage> {
   }
 
   void _showProfileDetail(BuildContext context, Map<String, dynamic> profile) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isDefault = profile['default'] == 'true';
     final isIsolir = profile['name']?.toString().toUpperCase() == 'ISOLIR';
 
@@ -417,9 +430,9 @@ class _PPPProfilePageState extends State<PPPProfilePage> {
         minChildSize: 0.5,
         maxChildSize: 0.95,
         builder: (_, controller) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
             children: [
@@ -429,7 +442,7 @@ class _PPPProfilePageState extends State<PPPProfilePage> {
                 height: 4,
                 margin: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -446,10 +459,10 @@ class _PPPProfilePageState extends State<PPPProfilePage> {
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: isIsolir 
-                              ? Colors.red.shade50
+                              ? (isDark ? Colors.red.shade900 : Colors.red.shade50)
                               : isDefault 
-                                ? Colors.blue.shade50
-                                : Colors.orange.shade50,
+                                ? (isDark ? Colors.blue.shade900 : Colors.blue.shade50)
+                                : (isDark ? Colors.orange.shade900 : Colors.orange.shade50),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
@@ -460,10 +473,10 @@ class _PPPProfilePageState extends State<PPPProfilePage> {
                                 : Icons.wifi,
                             size: 24,
                             color: isIsolir 
-                              ? Colors.red
+                              ? (isDark ? Colors.red.shade300 : Colors.red)
                               : isDefault 
-                                ? Colors.blue
-                                : Colors.orange,
+                                ? (isDark ? Colors.blue.shade300 : Colors.blue)
+                                : (isDark ? Colors.orange.shade300 : Colors.orange),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -473,9 +486,10 @@ class _PPPProfilePageState extends State<PPPProfilePage> {
                             children: [
                               Text(
                                 profile['name']?.toString() ?? 'Unnamed Profile',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
+                                  color: isDark ? Colors.white : Colors.black87,
                                 ),
                               ),
                               if (isDefault) ...[
@@ -486,13 +500,13 @@ class _PPPProfilePageState extends State<PPPProfilePage> {
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.blue.shade50,
+                                    color: isDark ? Colors.blue.shade900 : Colors.blue.shade50,
                                     borderRadius: BorderRadius.circular(6),
                                   ),
-                                  child: const Text(
+                                  child: Text(
                                     'Default Profile',
                                     style: TextStyle(
-                                      color: Colors.blue,
+                                      color: isDark ? Colors.blue.shade300 : Colors.blue,
                                       fontSize: 12,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -591,6 +605,7 @@ class _PPPProfilePageState extends State<PPPProfilePage> {
   }
 
   Widget _buildDetailSection(String title, List<Widget> children) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -599,7 +614,7 @@ class _PPPProfilePageState extends State<PPPProfilePage> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Colors.grey.shade800,
+            color: isDark ? Colors.white : Colors.grey.shade800,
           ),
         ),
         const SizedBox(height: 12),
@@ -609,6 +624,7 @@ class _PPPProfilePageState extends State<PPPProfilePage> {
   }
 
   Widget _buildDetailRow(IconData icon, String label, {String? value, bool isHighlighted = false}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -617,16 +633,16 @@ class _PPPProfilePageState extends State<PPPProfilePage> {
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: isHighlighted 
-                ? Colors.blue.shade50 
-                : Colors.grey.shade100,
+                ? (isDark ? Colors.blue.shade900 : Colors.blue.shade50)
+                : (isDark ? const Color(0xFF2D2D2D) : Colors.grey.shade100),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               icon,
               size: 20,
               color: isHighlighted 
-                ? Colors.blue 
-                : Colors.grey.shade700,
+                ? (isDark ? Colors.blue.shade300 : Colors.blue)
+                : (isDark ? Colors.grey.shade400 : Colors.grey.shade700),
             ),
           ),
           const SizedBox(width: 12),
@@ -638,8 +654,8 @@ class _PPPProfilePageState extends State<PPPProfilePage> {
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                     color: isHighlighted 
-                      ? Colors.blue.shade700 
-                      : Colors.black87,
+                      ? (isDark ? Colors.blue.shade300 : Colors.blue.shade700)
+                      : (isDark ? Colors.white : Colors.black87),
                   ),
                 )
               : Column(
@@ -649,15 +665,16 @@ class _PPPProfilePageState extends State<PPPProfilePage> {
                       label,
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.grey.shade600,
+                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       value,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
+                        color: isDark ? Colors.white : Colors.black87,
                       ),
                     ),
                   ],

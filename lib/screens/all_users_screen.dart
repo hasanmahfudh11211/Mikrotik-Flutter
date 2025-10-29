@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import '../widgets/gradient_container.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import '../services/api_service.dart';
 import 'edit_data_tambahan_screen.dart';
 import 'package:intl/intl.dart';
@@ -43,129 +41,6 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  Future<void> _showActionDialog({
-    required BuildContext context,
-    required String title,
-    required String contentToCopy,
-    required String openActionLabel,
-    required String copyActionLabel,
-    required IconData openActionIcon,
-    required VoidCallback onOpen,
-  }) async {
-    await showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      backgroundColor: Theme.of(context).dialogBackgroundColor,
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Text(
-                title,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              ListTile(
-                leading: openActionLabel.toLowerCase().contains('whatsapp')
-                    ? Image.asset('assets/WhatsApp.svg.png', width: 32, height: 32)
-                    : Icon(openActionIcon, color: Theme.of(context).primaryColor, size: 32),
-                title: Text(openActionLabel, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-                onTap: () {
-                  try {
-                    Navigator.pop(context);
-                    onOpen();
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Terjadi error: $e'), backgroundColor: Colors.red),
-                    );
-                  }
-                },
-              ),
-              const Divider(),
-              ListTile(
-                leading: Icon(Icons.copy, color: Colors.grey.shade700, size: 32),
-                title: Text(copyActionLabel, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-                onTap: () {
-                  try {
-                    Navigator.pop(context);
-                    Clipboard.setData(ClipboardData(text: contentToCopy));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Berhasil disalin ke clipboard!'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Gagal menyalin: $e'), backgroundColor: Colors.red),
-                    );
-                  }
-                },
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _loadUsers() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final data = await ApiService.getAllUsers();
-      if (!mounted) return;
-      if (data['success'] == true) {
-        // Ambil secrets dari Mikrotik
-        final provider = Provider.of<MikrotikProvider>(context, listen: false);
-        final secrets = await provider.service.getPPPSecret();
-        if (!mounted) return;
-        final secretUsernames = secrets.map((s) => s['name']).toSet();
-        final filtered = List<Map<String, dynamic>>.from(data['users'])
-            .where((u) => secretUsernames.contains(u['username']))
-            .toList();
-        if (mounted) {
-          setState(() {
-            _users = filtered;
-            _isLoading = false;
-          });
-        }
-      } else {
-        if (mounted) {
-          setState(() {
-            _error = data['message'] ?? 'Gagal memuat data';
-            _isLoading = false;
-          });
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = 'Gagal memuat data: ${e.toString()}';
-          _isLoading = false;
-        });
-      }
-    }
   }
 
   // Fungsi baru: load users dari API PHP
@@ -212,11 +87,13 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
   }
 
   void _showSortDialog() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
+      backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
       builder: (context) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -224,10 +101,14 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: Text(
               'Urutkan Berdasarkan',
-              style: Theme.of(context).textTheme.titleLarge,
+              style: TextStyle(
+                fontSize: 18, 
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black87
+              ),
             ),
           ),
-          const Divider(height: 1),
+          Divider(height: 1, color: isDark ? Colors.grey.shade700 : null),
           Flexible(
             child: ListView.builder(
               shrinkWrap: true,
@@ -240,10 +121,14 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                     option,
                     style: TextStyle(
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      color: isSelected ? Theme.of(context).primaryColor : null,
+                      color: isSelected 
+                        ? (isDark ? Colors.blue.shade300 : Theme.of(context).primaryColor) 
+                        : (isDark ? Colors.white : Colors.black87),
                     ),
                   ),
-                  trailing: isSelected ? Icon(Icons.check, color: Theme.of(context).primaryColor) : null,
+                  trailing: isSelected 
+                    ? Icon(Icons.check, color: isDark ? Colors.blue.shade300 : Theme.of(context).primaryColor) 
+                    : null,
                   onTap: () {
                     setState(() {
                       _sortOption = option;
@@ -305,16 +190,34 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
   }
 
   Future<void> _deleteUser(Map<String, dynamic> user) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Hapus User', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Text('Yakin ingin menghapus user "${user['username']}"?'),
+        title: Text(
+          'Hapus User', 
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : Colors.black87
+          )
+        ),
+        content: Text(
+          'Yakin ingin menghapus user "${user['username']}"?',
+          style: TextStyle(
+            color: isDark ? Colors.white70 : Colors.black87
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
+            child: Text(
+              'Batal',
+              style: TextStyle(
+                color: isDark ? Colors.blue.shade300 : Colors.blue
+              ),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -352,6 +255,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return DraggableScrollableSheet(
           initialChildSize: 0.55,
           minChildSize: 0.4,
@@ -359,7 +263,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
           expand: false,
           builder: (_, controller) => Container(
             decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor,
+              color: isDark ? const Color(0xFF1E1E1E) : Theme.of(context).scaffoldBackgroundColor,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: ListView(
@@ -372,7 +276,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
+                      color: isDark ? Colors.grey.shade600 : Colors.grey[300],
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -381,8 +285,8 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                   children: [
                     CircleAvatar(
                       radius: 32,
-                      backgroundColor: Colors.blue.shade50,
-                      child: Icon(Icons.person, color: Colors.blue.shade700, size: 38),
+                      backgroundColor: isDark ? Colors.blue.shade900 : Colors.blue.shade50,
+                      child: Icon(Icons.person, color: isDark ? Colors.blue.shade300 : Colors.blue.shade700, size: 38),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -391,11 +295,11 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                         children: [
                           Text(
                             user['username'] ?? '-',
-                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
                           ),
                           Text(
                             user['profile'] ?? '-',
-                            style: TextStyle(color: Colors.grey[600], fontSize: 15),
+                            style: TextStyle(color: isDark ? Colors.white70 : Colors.grey[600], fontSize: 15),
                           ),
                         ],
                       ),
@@ -424,7 +328,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                                     GestureDetector(
                                       onTap: () => Navigator.of(context).pop(),
                                       child: Container(
-                                        color: Colors.black.withOpacity(0.8),
+                                        color: Colors.black.withValues(alpha: 0.8),
                                         child: Center(
                                           child: InteractiveViewer(
                                             child: Image.network(
@@ -475,13 +379,13 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                 const SizedBox(height: 24),
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: isDark ? const Color(0xFF2D2D2D) : Colors.white,
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black12,
+                        color: isDark ? Colors.black45 : Colors.black12,
                         blurRadius: 8,
-                        offset: Offset(0, 2),
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
@@ -553,7 +457,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                           icon: const Icon(Icons.edit_note),
                           label: const Text('Edit Data Tambahan'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue.shade800,
+                            backgroundColor: isDark ? Colors.blue.shade700 : Colors.blue.shade800,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
@@ -595,11 +499,21 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
     required String openLabel,
     required VoidCallback onOpen,
   }) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Center(child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold))),
+        title: Center(
+          child: Text(
+            title, 
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black87
+            )
+          )
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -607,13 +521,17 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
               padding: const EdgeInsets.all(12),
               margin: const EdgeInsets.only(bottom: 20),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
+                border: Border.all(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
                 borderRadius: BorderRadius.circular(12),
-                color: Colors.grey.shade100,
+                color: isDark ? const Color(0xFF2D2D2D) : Colors.grey.shade100,
               ),
               child: SelectableText(
                 value,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 18, 
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black87
+                ),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -621,6 +539,10 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isDark ? Colors.blue.shade700 : Colors.blue.shade800,
+                      foregroundColor: Colors.white,
+                    ),
                     icon: const Icon(Icons.copy),
                     label: const Text('Salin'),
                     onPressed: () async {
@@ -635,6 +557,10 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isDark ? Colors.blue.shade700 : Colors.blue.shade800,
+                      foregroundColor: Colors.white,
+                    ),
                     icon: title == 'Nomor WhatsApp'
                         ? Image.asset('assets/WhatsApp.svg.png', width: 24, height: 24)
                         : title == 'Link Maps'
@@ -657,13 +583,14 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
 
   // Tambahkan fungsi _infoRow untuk tampilan modern
   Widget _infoRow(IconData? icon, String label, String value, {bool isPassword = false, bool isWA = false, bool isMaps = false}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     Widget? leadingIcon;
     if (isWA) {
       leadingIcon = Image.asset('assets/WhatsApp.svg.png', width: 22, height: 22);
     } else if (isMaps) {
       leadingIcon = Image.asset('assets/pngimg.com - google_maps_pin_PNG26.png', width: 22, height: 22);
     } else if (icon != null) {
-      leadingIcon = Icon(icon, color: Colors.blueAccent, size: 22);
+      leadingIcon = Icon(icon, color: isDark ? Colors.blue.shade300 : Colors.blueAccent, size: 22);
     }
 
     Widget valueWidget;
@@ -676,7 +603,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
             Expanded(
               child: Text(
                 isObscure ? '••••••••' : value,
-                style: const TextStyle(fontSize: 15, color: Colors.black54),
+                style: TextStyle(fontSize: 15, color: isDark ? Colors.white70 : Colors.black54),
                 overflow: TextOverflow.visible,
                 maxLines: null,
               ),
@@ -686,7 +613,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
               child: Icon(
                 isObscure ? Icons.visibility_off : Icons.visibility,
                 size: 18,
-                color: Colors.grey,
+                color: isDark ? Colors.white70 : Colors.grey,
               ),
             ),
           ],
@@ -697,7 +624,9 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
         value,
         style: TextStyle(
           fontSize: 15,
-          color: isWA || isMaps ? Colors.blue : Colors.black87,
+          color: isWA || isMaps 
+            ? (isDark ? Colors.blue.shade300 : Colors.blue) 
+            : (isDark ? Colors.white70 : Colors.black87),
           decoration: isWA || isMaps ? TextDecoration.underline : TextDecoration.none,
         ),
         overflow: TextOverflow.visible,
@@ -765,7 +694,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
             leadingIcon,
             const SizedBox(width: 10),
           ],
-          Text('${label}:', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+          Text('${label}:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: isDark ? Colors.white : Colors.black87)),
           const SizedBox(width: 8),
           Expanded(child: valueWidget),
         ],
@@ -777,6 +706,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GradientContainer(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -810,20 +740,33 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               child: Card(
+                color: Theme.of(context).cardColor,
                 elevation: 4,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: TextField(
                   controller: _searchController,
+                  style: TextStyle(
+                    color: Theme.of(context).textTheme.bodyLarge?.color
+                  ),
                   decoration: InputDecoration(
                     hintText: 'Cari user...',
-                    prefixIcon: const Icon(Icons.search),
+                    hintStyle: TextStyle(
+                      color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.7)
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: Theme.of(context).iconTheme.color,
+                    ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.clear),
+                            icon: Icon(
+                              Icons.clear,
+                              color: Theme.of(context).iconTheme.color,
+                            ),
                             onPressed: () {
                               setState(() {
                                 _searchController.clear();
@@ -860,7 +803,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                                 const SizedBox(height: 16),
                                 Text(
                                   _error!,
-                                  style: const TextStyle(color: Colors.red),
+                                  style: TextStyle(color: Colors.red, fontSize: 16),
                                   textAlign: TextAlign.center,
                                 ),
                                 const SizedBox(height: 16),
@@ -903,17 +846,17 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                                         margin: EdgeInsets.zero,
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(14),
-                                          side: BorderSide(color: Colors.grey.shade200, width: 1),
+                                          side: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade200, width: 1),
                                         ),
-                                        color: Colors.white,
+                                        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                                         child: Padding(
                                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                           child: Row(
                                             children: [
                                               CircleAvatar(
                                                 radius: 20,
-                                                backgroundColor: Colors.blue.shade50,
-                                                child: Icon(Icons.person, color: Colors.blue.shade700, size: 22),
+                                                backgroundColor: isDark ? Colors.blue.shade900 : Colors.blue.shade50,
+                                                child: Icon(Icons.person, color: isDark ? Colors.blue.shade300 : Colors.blue.shade700, size: 22),
                                               ),
                                               const SizedBox(width: 12),
                                               Expanded(
@@ -922,27 +865,26 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                                                   children: [
                                                     Text(
                                                       user['username'],
-                                                      style: const TextStyle(
+                                                      style: TextStyle(
                                                         fontWeight: FontWeight.bold,
                                                         fontSize: 15,
+                                                        color: isDark ? Colors.white : Colors.black87,
                                                       ),
                                                     ),
                                                     Text(
                                                       'Profile: ${user['profile']}',
-                                                      style: const TextStyle(fontSize: 13, color: Colors.black54),
+                                                      style: TextStyle(fontSize: 13, color: isDark ? Colors.white70 : Colors.black54),
                                                     ),
                                                     if (user['odp_name']?.isNotEmpty ?? false)
                                                       Row(
                                                         children: [
-                                                          Icon(Icons.call_split, size: 16, color: Colors.blue.shade800),
+                                                          Icon(Icons.call_split, size: 16, color: isDark ? Colors.blue.shade300 : Colors.blue.shade800),
                                                           const SizedBox(width: 4),
-                                                          Flexible(
-                                                            child: Text(
-                                                              'ODP: ${user['odp_name']}',
-                                                              style: const TextStyle(fontSize: 12, color: Colors.black),
-                                                              overflow: TextOverflow.visible,
-                                                              maxLines: null,
-                                                            ),
+                                                          Text(
+                                                            'ODP: ${user['odp_name']}',
+                                                            style: TextStyle(fontSize: 12, color: isDark ? Colors.white : Colors.black),
+                                                            overflow: TextOverflow.visible,
+                                                            maxLines: null,
                                                           ),
                                                         ],
                                                       ),
@@ -951,7 +893,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                                                         children: [
                                                           Image.asset('assets/WhatsApp.svg.png', width: 16, height: 16),
                                                           const SizedBox(width: 4),
-                                                          Text('WA: ${user['wa']}', style: const TextStyle(fontSize: 12)),
+                                                          Text('WA: ${user['wa']}', style: TextStyle(fontSize: 12, color: isDark ? Colors.white : Colors.black)),
                                                         ],
                                                       ),
                                                     if (user['maps']?.isNotEmpty ?? false)
@@ -962,7 +904,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                                                           Flexible(
                                                             child: Text(
                                                               'Maps: ${user['maps']}',
-                                                              style: const TextStyle(fontSize: 12),
+                                                              style: TextStyle(fontSize: 12, color: isDark ? Colors.white : Colors.black),
                                                               overflow: TextOverflow.ellipsis,
                                                             ),
                                                           ),
@@ -986,8 +928,9 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
                 'Total User: ${_filteredUsers.length}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.white : Colors.black87,
                 ),
               ),
             ),

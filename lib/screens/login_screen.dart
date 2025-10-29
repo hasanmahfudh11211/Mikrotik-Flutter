@@ -235,11 +235,14 @@ Solusi:
       }
     }
 
+    // Check if dark mode is enabled
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: Colors.white,
+          backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
           contentPadding: EdgeInsets.zero,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -256,11 +259,12 @@ Solusi:
               ),
               const SizedBox(height: 8),
               // Title
-              const Text(
+              Text(
                 'Gagal Terhubung',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -269,10 +273,10 @@ Solusi:
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: Colors.grey[50],
+                  color: isDark ? Colors.grey[800] : Colors.grey[50],
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: Colors.grey[200]!,
+                    color: isDark ? Colors.grey[700]! : Colors.grey[200]!,
                     width: 1,
                   ),
                 ),
@@ -301,7 +305,7 @@ Solusi:
                             style: TextStyle(
                               fontSize: 13,
                               height: 1.4,
-                              color: Colors.red[400],
+                              color: isDark ? Colors.white : Colors.red[400],
                               fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
                             ),
                             textAlign: line == 'Koneksi Timeout (10 detik)' ||
@@ -352,12 +356,15 @@ Solusi:
     // Capitalize first letter of username
     final capitalizedUsername = username[0].toUpperCase() + username.substring(1);
     
+    // Check if dark mode is enabled
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     showDialog(
       context: context,
       barrierDismissible: false, // Prevent dismissing by tapping outside
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: Colors.white,
+          backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
           contentPadding: EdgeInsets.zero,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -371,7 +378,7 @@ Solusi:
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: Colors.green[50],
+                  color: isDark ? Colors.green[900] : Colors.green[50],
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -382,11 +389,12 @@ Solusi:
               ),
               const SizedBox(height: 12),
               // Title
-              const Text(
+              Text(
                 'Login Berhasil',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white : Colors.black,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -396,7 +404,7 @@ Solusi:
                 'Selamat datang, $capitalizedUsername!',
                 style: TextStyle(
                   fontSize: 13,
-                  color: Colors.green[400],
+                  color: isDark ? Colors.green[300] : Colors.green[400],
                   fontWeight: FontWeight.w400,
                 ),
                 textAlign: TextAlign.center,
@@ -448,6 +456,9 @@ Solusi:
     try {
       // Show loading dialog with timeout indicator
       if (mounted) {
+        // Check if dark mode is enabled
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -455,6 +466,7 @@ Solusi:
             return WillPopScope(
               onWillPop: () async => false,
               child: AlertDialog(
+                backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -469,11 +481,12 @@ Solusi:
                       ),
                     ),
                     const SizedBox(height: 24),
-                    const Text(
+                    Text(
                       'Menghubungkan ke Router',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -484,14 +497,14 @@ Solusi:
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.grey.withOpacity(0.1),
+                        color: isDark ? Colors.grey[800] : Colors.grey.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         '${_ipController.text}:${_portController.text}',
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.grey[600],
+                          color: isDark ? Colors.white70 : Colors.grey[600],
                           fontFamily: 'monospace',
                         ),
                         textAlign: TextAlign.center,
@@ -502,7 +515,7 @@ Solusi:
                       'Mohon tunggu...',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey[600],
+                        color: isDark ? Colors.white70 : Colors.grey[600],
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -579,29 +592,45 @@ Solusi:
 
   @override
   Widget build(BuildContext context) {
+    // Check if dark mode is enabled
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return WillPopScope(
       onWillPop: () async {
         final shouldExit = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
+            backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(18)
             ),
-            title: const Row(
+            title: Row(
               children: [
                 Icon(Icons.exit_to_app, color: Colors.red, size: 32),
                 SizedBox(width: 10),
-                Text('Keluar Aplikasi', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text('Keluar Aplikasi', 
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black,
+                  )
+                ),
               ],
             ),
-            content: const Text(
+            content: Text(
               'Apakah Anda yakin ingin keluar dari aplikasi?',
-              style: TextStyle(fontSize: 16)
+              style: TextStyle(
+                fontSize: 16,
+                color: isDark ? Colors.white70 : Colors.black,
+              )
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+                child: Text('Batal', 
+                  style: TextStyle(
+                    color: isDark ? Colors.white70 : Colors.grey
+                  )
+                ),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -622,62 +651,64 @@ Solusi:
       child: GradientContainer(
         child: Scaffold(
           backgroundColor: Colors.transparent,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
+          body: SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 360),
-            child: Card(
-              elevation: 6,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
+                  child: Card(
+                    elevation: 6,
+                    color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
                         horizontal: 20.0,
                         vertical: 20.0
                       ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                          const SizedBox(height: 4),
-                    // Logo Mikrotik PNG
-                    Image.asset(
-                      'assets/Mikrotik-logo.png',
-                            height: 48,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _appVersion,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.black38
-                            ),
-                    ),
-                          const SizedBox(height: 20),
-                    TabBar(
-                      controller: _tabController,
-                      tabs: const [
-                        Tab(text: 'LOG IN'),
-                        Tab(text: 'SAVED'),
-                      ],
-                      labelColor: Colors.blue,
-                      unselectedLabelColor: Colors.black38,
-                      indicatorColor: Colors.blue,
-                    ),
-                          const SizedBox(height: 20),
-                    SizedBox(
-                      height: 320,
-                      child: TabBarView(
-                        controller: _tabController,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Tab 1: LOG IN
-                          SingleChildScrollView(
-                            child: Form(
-                              key: _formKey,
-                              child: Column(
-                                children: [
+                          const SizedBox(height: 4),
+                          // Logo Mikrotik PNG
+                          Image.asset(
+                            'assets/Mikrotik-logo.png',
+                            height: 48,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _appVersion,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark ? Colors.white70 : Colors.black38
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          TabBar(
+                            controller: _tabController,
+                            tabs: const [
+                              Tab(text: 'LOG IN'),
+                              Tab(text: 'SAVED'),
+                            ],
+                            labelColor: isDark ? Colors.blue[300] : Colors.blue,
+                            unselectedLabelColor: isDark ? Colors.white70 : Colors.black38,
+                            indicatorColor: Colors.blue,
+                            dividerColor: isDark ? Colors.grey[700] : null,
+                          ),
+                          const SizedBox(height: 20),
+                          SizedBox(
+                            height: 320,
+                            child: TabBarView(
+                              controller: _tabController,
+                              children: [
+                                // Tab 1: LOG IN
+                                SingleChildScrollView(
+                                  child: Form(
+                                    key: _formKey,
+                                    child: Column(
+                                      children: [
                                         // IP and Port fields in a row
                                         Row(
                                           children: [
@@ -692,10 +723,19 @@ Solusi:
                                                 onFieldSubmitted: (_) {
                                                   FocusScope.of(context).requestFocus(_portFocus);
                                                 },
-                                                decoration: const InputDecoration(
+                                                decoration: InputDecoration(
                                                   labelText: 'IP Address',
                                                   hintText: '192.168.1.1',
-                                                  border: UnderlineInputBorder(),
+                                                  border: const UnderlineInputBorder(),
+                                                  labelStyle: TextStyle(
+                                                    color: isDark ? Colors.white70 : Colors.black54,
+                                                  ),
+                                                  hintStyle: TextStyle(
+                                                    color: isDark ? Colors.white38 : Colors.black38,
+                                                  ),
+                                                ),
+                                                style: TextStyle(
+                                                  color: isDark ? Colors.white : Colors.black,
                                                 ),
                                                 inputFormatters: [
                                                   FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
@@ -719,129 +759,155 @@ Solusi:
                                                 onFieldSubmitted: (_) {
                                                   FocusScope.of(context).requestFocus(_usernameFocus);
                                                 },
-                                    decoration: const InputDecoration(
+                                                decoration: InputDecoration(
                                                   labelText: 'Port',
                                                   hintText: '80',
-                                      border: UnderlineInputBorder(),
-                                    ),
+                                                  border: const UnderlineInputBorder(),
+                                                  labelStyle: TextStyle(
+                                                    color: isDark ? Colors.white70 : Colors.black54,
+                                                  ),
+                                                  hintStyle: TextStyle(
+                                                    color: isDark ? Colors.white38 : Colors.black38,
+                                                  ),
+                                                ),
+                                                style: TextStyle(
+                                                  color: isDark ? Colors.white : Colors.black,
+                                                ),
                                                 inputFormatters: [
                                                   FilteringTextInputFormatter.digitsOnly,
                                                 ],
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
+                                                validator: (value) {
+                                                  if (value == null || value.isEmpty) {
                                                     return 'Masukkan port';
-                                      }
-                                      return null;
-                                    },
+                                                  }
+                                                  return null;
+                                                },
                                               ),
                                             ),
                                           ],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  TextFormField(
-                                    controller: _usernameController,
-                                    focusNode: _usernameFocus,
-                                    textInputAction: TextInputAction.next,
-                                    onFieldSubmitted: (_) {
-                                      FocusScope.of(context).requestFocus(_passwordFocus);
-                                    },
-                                    decoration: const InputDecoration(
-                                      labelText: 'Username',
-                                      hintText: 'admin',
-                                      border: UnderlineInputBorder(),
-                                    ),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Masukkan username';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                  const SizedBox(height: 16),
-                                  TextFormField(
-                                    controller: _passwordController,
-                                    focusNode: _passwordFocus,
-                                    textInputAction: TextInputAction.done,
-                                    onFieldSubmitted: (_) {
-                                      // Just unfocus to close the keyboard
-                                      FocusScope.of(context).unfocus();
-                                    },
-                                    decoration: InputDecoration(
-                                      labelText: 'Password',
-                                      border: const UnderlineInputBorder(),
-                                      suffixIcon: IconButton(
-                                        icon: Icon(_obscurePassword
-                                            ? Icons.visibility_off
-                                            : Icons.visibility),
-                                        onPressed: () {
-                                          setState(() {
-                                                  _obscurePassword = !_obscurePassword;
-                                          });
-                                        },
-                                      ),
-                                    ),
-                                    obscureText: _obscurePassword,
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Masukkan password';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                        const SizedBox(height: 38),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: ElevatedButton(
-                                                onPressed: _isLoading ? null : _saveLogin,
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.black87,
-                                            foregroundColor: Colors.white,
-                                            shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(4),
-                                            ),
-                                            elevation: 1,
-                                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                          ),
-                                          child: const Text('SAVE'),
                                         ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: ElevatedButton(
-                                          onPressed: _isLoading ? null : _login,
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.blue,
-                                            foregroundColor: Colors.white,
-                                            shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(4),
+                                        const SizedBox(height: 16),
+                                        TextFormField(
+                                          controller: _usernameController,
+                                          focusNode: _usernameFocus,
+                                          textInputAction: TextInputAction.next,
+                                          onFieldSubmitted: (_) {
+                                            FocusScope.of(context).requestFocus(_passwordFocus);
+                                          },
+                                          decoration: InputDecoration(
+                                            labelText: 'Username',
+                                            hintText: 'admin',
+                                            border: const UnderlineInputBorder(),
+                                            labelStyle: TextStyle(
+                                              color: isDark ? Colors.white70 : Colors.black54,
                                             ),
-                                            elevation: 1,
-                                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                            hintStyle: TextStyle(
+                                              color: isDark ? Colors.white38 : Colors.black38,
+                                            ),
                                           ),
-                                          child: _isLoading
-                                              ? const SizedBox(
-                                                  width: 18,
-                                                  height: 18,
+                                          style: TextStyle(
+                                            color: isDark ? Colors.white : Colors.black,
+                                          ),
+                                          validator: (value) {
+                                            if (value == null || value.isEmpty) {
+                                              return 'Masukkan username';
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                        const SizedBox(height: 16),
+                                        TextFormField(
+                                          controller: _passwordController,
+                                          focusNode: _passwordFocus,
+                                          textInputAction: TextInputAction.done,
+                                          onFieldSubmitted: (_) {
+                                            // Just unfocus to close the keyboard
+                                            FocusScope.of(context).unfocus();
+                                          },
+                                          decoration: InputDecoration(
+                                            labelText: 'Password',
+                                            border: const UnderlineInputBorder(),
+                                            labelStyle: TextStyle(
+                                              color: isDark ? Colors.white70 : Colors.black54,
+                                            ),
+                                            suffixIcon: IconButton(
+                                              icon: Icon(_obscurePassword
+                                                  ? Icons.visibility_off
+                                                  : Icons.visibility,
+                                                  color: isDark ? Colors.white70 : Colors.black54,
+                                              ),
+                                              onPressed: () {
+                                                setState(() {
+                                                  _obscurePassword = !_obscurePassword;
+                                                });
+                                              },
+                                            ),
+                                          ),
+                                          style: TextStyle(
+                                            color: isDark ? Colors.white : Colors.black,
+                                          ),
+                                          obscureText: _obscurePassword,
+                                          validator: (value) {
+                                            if (value == null || value.isEmpty) {
+                                              return 'Masukkan password';
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                        const SizedBox(height: 38),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: ElevatedButton(
+                                                onPressed: _isLoading ? null : _saveLogin,
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: isDark ? Colors.grey[700] : Colors.black87,
+                                                  foregroundColor: Colors.white,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(4),
+                                                  ),
+                                                  elevation: 1,
+                                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                                ),
+                                                child: const Text('SAVE'),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: ElevatedButton(
+                                                onPressed: _isLoading ? null : _login,
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Colors.blue,
+                                                  foregroundColor: Colors.white,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(4),
+                                                  ),
+                                                  elevation: 1,
+                                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                                ),
+                                                child: _isLoading
+                                                    ? const SizedBox(
+                                                        width: 18,
+                                                        height: 18,
                                                         child: CircularProgressIndicator(
                                                           strokeWidth: 2,
                                                           color: Colors.white),
-                                                )
-                                              : const Text('CONNECT'),
+                                                      )
+                                                    : const Text('CONNECT'),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ),
-                                    ],
-                                  ),
                                         const SizedBox(height: 4),
-                                ],
-                              ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                // Tab 2: SAVED
+                                _buildSavedLoginsTab(),
+                              ],
                             ),
                           ),
-                          // Tab 2: SAVED
-                                _buildSavedLoginsTab(),
-                                        ],
-                            ),
-                                ),
                         ],
                       ),
                     ),
@@ -856,18 +922,26 @@ Solusi:
   }
 
   Widget _buildSavedLoginsTab() {
+    // Check if dark mode is enabled
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     if (_savedLogins.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'Tidak ada login tersimpan',
-          style: TextStyle(color: Colors.grey),
+          style: TextStyle(
+            color: isDark ? Colors.white70 : Colors.grey,
+          ),
         ),
       );
     } else {
       return ListView.separated(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         itemCount: _savedLogins.length,
-        separatorBuilder: (context, index) => const Divider(height: 1),
+        separatorBuilder: (context, index) => Divider(
+          height: 1,
+          color: isDark ? Colors.grey[700] : Colors.grey[300],
+        ),
         itemBuilder: (context, index) {
           final login = _savedLogins[index];
           final address = login['address'] ?? '';
@@ -884,12 +958,15 @@ Solusi:
             onTap: () => _fillForm(login),
             title: Row(
               children: [
-                const Icon(Icons.router_outlined, size: 16, color: Colors.grey),
+                Icon(Icons.router_outlined, size: 16, color: isDark ? Colors.white70 : Colors.grey),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     '$ip:$port',
-                    style: const TextStyle(fontSize: 15),
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -897,23 +974,26 @@ Solusi:
             ),
             subtitle: Row(
               children: [
-                const Icon(Icons.person_outline, size: 16, color: Colors.grey),
+                Icon(Icons.person_outline, size: 16, color: isDark ? Colors.white70 : Colors.grey),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     username,
-                    style: const TextStyle(fontSize: 14),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
             trailing: IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
+              icon: Icon(Icons.delete, color: isDark ? Colors.red[300] : Colors.red),
               onPressed: () {
                 _deleteLogin(index);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
+                  SnackBar(
                     content: Text('Login berhasil dihapus!'),
                     backgroundColor: Colors.red,
                   ),

@@ -45,7 +45,7 @@ class RouterImageServiceSimple {
     }
     
     print('RouterImageServiceSimple: No URL found for $boardName');
-    return 'https://cdn.mikrotik.com/web-assets/rb_images/1405_m.png'; // hEX default
+    return 'assets/mikrotik_product_images/default.png'; // Local default image
   }
 
   /// Get router image URL based on board name
@@ -53,7 +53,7 @@ class RouterImageServiceSimple {
     await _loadRouterImages();
     
     if (boardName == null || boardName.isEmpty) {
-      return 'https://cdn.mikrotik.com/web-assets/rb_images/1405_m.png';
+      return 'assets/mikrotik_product_images/default.png'; // Local default image
     }
 
     final cleanBoardName = boardName.trim();
@@ -70,6 +70,6 @@ class RouterImageServiceSimple {
     final keys = _routerImages!.keys.take(5).toList();
     print('RouterImageServiceSimple: First 5 keys: $keys');
     
-    return 'https://cdn.mikrotik.com/web-assets/rb_images/1405_m.png';
+    return 'assets/mikrotik_product_images/default.png'; // Local default image
   }
 }

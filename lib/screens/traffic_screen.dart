@@ -90,6 +90,7 @@ class _TrafficScreenState extends State<TrafficScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GradientContainer(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -97,6 +98,11 @@ class _TrafficScreenState extends State<TrafficScreen> {
           title: const Text('Traffic Monitor'),
           backgroundColor: Colors.transparent,
           elevation: 0,
+          titleTextStyle: TextStyle(
+            color: isDark ? Colors.white : Colors.black87,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         body: SingleChildScrollView(
           child: Padding(
@@ -107,7 +113,9 @@ class _TrafficScreenState extends State<TrafficScreen> {
                 // Main Card containing all content
                 Card(
                   elevation: 0,
-                  color: Colors.white.withOpacity(0.9),
+                  color: isDark 
+                    ? const Color(0xFF1E1E1E).withValues(alpha: 0.9) 
+                    : Colors.white.withValues(alpha: 0.9),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -119,24 +127,34 @@ class _TrafficScreenState extends State<TrafficScreen> {
                         // Interface Selector
                         Container(
                           decoration: BoxDecoration(
-                            color: Colors.grey[100],
+                            color: isDark ? Colors.grey[800] : Colors.grey[100],
                             borderRadius: BorderRadius.circular(12),
                           ),
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
+                              dropdownColor: isDark ? const Color(0xFF2D2D2D) : Colors.white,
                               value: _selectedInterfaceId,
-                              hint: const Text('Select Interface'),
+                              hint: Text(
+                                'Select Interface',
+                                style: TextStyle(
+                                  color: isDark ? Colors.white70 : Colors.black54,
+                                ),
+                              ),
                               isExpanded: true,
-                              icon: const Icon(Icons.arrow_drop_down_rounded),
+                              icon: Icon(
+                                Icons.arrow_drop_down_rounded,
+                                color: isDark ? Colors.white70 : Colors.black54,
+                              ),
                               items: _interfaces.map((interface) {
                                 return DropdownMenuItem<String>(
                                   value: interface['.id'],
                                   child: Text(
                                     interface['name'] ?? 'Unknown',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500,
+                                      color: isDark ? Colors.white : Colors.black87,
                                     ),
                                   ),
                                 );
@@ -161,8 +179,12 @@ class _TrafficScreenState extends State<TrafficScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             decoration: BoxDecoration(
                               color: _selectedInterface!['running'] == "true"
-                                  ? Colors.green.withOpacity(0.1)
-                                  : Colors.red.withOpacity(0.1),
+                                  ? (isDark 
+                                      ? Colors.green.withValues(alpha: 0.2) 
+                                      : Colors.green.withValues(alpha: 0.1))
+                                  : (isDark 
+                                      ? Colors.red.withValues(alpha: 0.2) 
+                                      : Colors.red.withValues(alpha: 0.1)),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
@@ -182,8 +204,8 @@ class _TrafficScreenState extends State<TrafficScreen> {
                                       : "Stopped",
                                   style: TextStyle(
                                     color: _selectedInterface!['running'] == "true"
-                                        ? Colors.green
-                                        : Colors.red,
+                                        ? (isDark ? Colors.green.shade300 : Colors.green)
+                                        : (isDark ? Colors.red.shade300 : Colors.red),
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -202,12 +224,13 @@ class _TrafficScreenState extends State<TrafficScreen> {
                                     _formatRateUnit(_trafficData!['tx-rate']),
                                     _formatPacketRate(_trafficData!['tx-packet-rate']),
                                     Colors.deepOrange,
+                                    isDark: isDark,
                                   ),
                                 ),
                                 Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 16),
                                   child: VerticalDivider(
-                                    color: Colors.grey[300],
+                                    color: isDark ? Colors.grey[700] : Colors.grey[300],
                                     thickness: 1,
                                     indent: 10,
                                     endIndent: 10,
@@ -220,6 +243,7 @@ class _TrafficScreenState extends State<TrafficScreen> {
                                     _formatRateUnit(_trafficData!['rx-rate']),
                                     _formatPacketRate(_trafficData!['rx-packet-rate']),
                                     Colors.blue,
+                                    isDark: isDark,
                                   ),
                                 ),
                               ],
@@ -230,37 +254,37 @@ class _TrafficScreenState extends State<TrafficScreen> {
                             child: Divider(height: 1),
                           ),
                           // Interface Details
-                          const Text(
+                          Text(
                             'Interface Details',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color: Colors.black87,
+                              color: isDark ? Colors.white : Colors.black87,
                             ),
                           ),
                           const SizedBox(height: 16),
-                          _buildDetailRow('Name', _selectedInterface!['name'] ?? '-'),
-                          _buildDetailRow('Type', _selectedInterface!['type'] ?? '-'),
-                          _buildDetailRow('MAC Address', _selectedInterface!['mac-address'] ?? '-'),
-                          _buildDetailRow('MTU', _selectedInterface!['mtu'] ?? '-'),
+                          _buildDetailRow('Name', _selectedInterface!['name'] ?? '-', isDark: isDark),
+                          _buildDetailRow('Type', _selectedInterface!['type'] ?? '-', isDark: isDark),
+                          _buildDetailRow('MAC Address', _selectedInterface!['mac-address'] ?? '-', isDark: isDark),
+                          _buildDetailRow('MTU', _selectedInterface!['mtu'] ?? '-', isDark: isDark),
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 16),
                             child: Divider(height: 1),
                           ),
                           // Total Traffic
-                          const Text(
+                          Text(
                             'Total Traffic',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color: Colors.black87,
+                              color: isDark ? Colors.white : Colors.black87,
                             ),
                           ),
                           const SizedBox(height: 16),
-                          _buildDetailRow('Total TX', _formatBytes(_trafficData!['total-tx-byte']), isTotal: true),
-                          _buildDetailRow('Total RX', _formatBytes(_trafficData!['total-rx-byte']), isTotal: true),
-                          _buildDetailRow('TX Packets', _formatPackets(_trafficData!['total-tx-packet'])),
-                          _buildDetailRow('RX Packets', _formatPackets(_trafficData!['total-rx-packet'])),
+                          _buildDetailRow('Total TX', _formatBytes(_trafficData!['total-tx-byte']), isTotal: true, isDark: isDark),
+                          _buildDetailRow('Total RX', _formatBytes(_trafficData!['total-rx-byte']), isTotal: true, isDark: isDark),
+                          _buildDetailRow('TX Packets', _formatPackets(_trafficData!['total-tx-packet']), isDark: isDark),
+                          _buildDetailRow('RX Packets', _formatPackets(_trafficData!['total-rx-packet']), isDark: isDark),
                         ] else ...[
                           const SizedBox(height: 100),
                           const Center(
@@ -279,14 +303,14 @@ class _TrafficScreenState extends State<TrafficScreen> {
     );
   }
 
-  Widget _buildRateInfo(String label, String rate, String unit, String packetRate, MaterialColor color) {
+  Widget _buildRateInfo(String label, String rate, String unit, String packetRate, MaterialColor color, {bool isDark = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
           style: TextStyle(
-            color: color,
+            color: isDark ? color.shade300 : color,
             fontWeight: FontWeight.w500,
             fontSize: 16,
           ),
@@ -301,7 +325,7 @@ class _TrafficScreenState extends State<TrafficScreen> {
               Text(
                 rate,
                 style: TextStyle(
-                  color: color,
+                  color: isDark ? color.shade300 : color,
                   fontSize: 42,
                   fontWeight: FontWeight.bold,
                   height: 1,
@@ -311,7 +335,9 @@ class _TrafficScreenState extends State<TrafficScreen> {
               Text(
                 unit,
                 style: TextStyle(
-                  color: color.withOpacity(0.8),
+                  color: isDark 
+                    ? color.shade400 
+                    : color.withValues(alpha: 0.8),
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                 ),
@@ -323,7 +349,9 @@ class _TrafficScreenState extends State<TrafficScreen> {
         Text(
           packetRate,
           style: TextStyle(
-            color: color.withOpacity(0.7),
+            color: isDark 
+              ? color.shade500 
+              : color.withValues(alpha: 0.7),
             fontSize: 14,
           ),
         ),
@@ -331,7 +359,7 @@ class _TrafficScreenState extends State<TrafficScreen> {
     );
   }
 
-  Widget _buildDetailRow(String label, String value, {bool isTotal = false}) {
+  Widget _buildDetailRow(String label, String value, {bool isTotal = false, bool isDark = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -341,7 +369,7 @@ class _TrafficScreenState extends State<TrafficScreen> {
           Text(
             label,
             style: TextStyle(
-              color: Colors.grey[600],
+              color: isDark ? Colors.grey.shade400 : Colors.grey[600],
               fontSize: 14,
             ),
           ),
@@ -352,6 +380,7 @@ class _TrafficScreenState extends State<TrafficScreen> {
               style: TextStyle(
                 fontWeight: isTotal ? FontWeight.bold : FontWeight.w500,
                 fontSize: isTotal ? 15 : 14,
+                color: isDark ? Colors.white : Colors.black87,
               ),
               textAlign: TextAlign.end,
             ),

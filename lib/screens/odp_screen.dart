@@ -72,12 +72,20 @@ class _ODPScreenState extends State<ODPScreen> {
   }
 
   Future<void> _showCopyOpenMapsDialog(String mapsLink) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Center(
-          child: Text('Link Maps', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Center(
+          child: Text(
+            'Link Maps', 
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black87,
+            )
+          ),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -86,13 +94,19 @@ class _ODPScreenState extends State<ODPScreen> {
               padding: const EdgeInsets.all(12),
               margin: const EdgeInsets.only(bottom: 20),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
+                border: Border.all(
+                  color: isDark ? Colors.grey.shade700 : Colors.grey.shade300
+                ),
                 borderRadius: BorderRadius.circular(12),
-                color: Colors.grey.shade100,
+                color: isDark ? const Color(0xFF2D2D2D) : Colors.grey.shade100,
               ),
               child: SelectableText(
                 mapsLink,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  fontSize: 16, 
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -106,14 +120,15 @@ class _ODPScreenState extends State<ODPScreen> {
                       Clipboard.setData(ClipboardData(text: mapsLink));
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Link berhasil disalin!'),
-                            backgroundColor: Colors.green),
+                        SnackBar(
+                          content: const Text('Link berhasil disalin!'),
+                          backgroundColor: isDark ? Colors.grey[800] : Colors.green,
+                        ),
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      foregroundColor: Colors.grey.shade800,
-                      backgroundColor: Colors.grey.shade200,
+                      foregroundColor: isDark ? Colors.white : Colors.grey.shade800,
+                      backgroundColor: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -131,8 +146,8 @@ class _ODPScreenState extends State<ODPScreen> {
                       _launchMapsUrl(mapsLink);
                     },
                     style: ElevatedButton.styleFrom(
-                      foregroundColor: Colors.grey.shade800,
-                      backgroundColor: Colors.grey.shade200,
+                      foregroundColor: isDark ? Colors.white : Colors.grey.shade800,
+                      backgroundColor: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -164,6 +179,7 @@ class _ODPScreenState extends State<ODPScreen> {
   }
 
   void _showODPDetail(Map<String, dynamic> odp) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final type = odp['type']?.toString() ?? '';
     final name = odp['name']?.toString() ?? '';
     final location = odp['location']?.toString() ?? '';
@@ -179,6 +195,7 @@ class _ODPScreenState extends State<ODPScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -198,7 +215,9 @@ class _ODPScreenState extends State<ODPScreen> {
                   children: [
                     Icon(
                       type == 'splitter' ? Icons.call_split : Icons.percent,
-                      color: type == 'splitter' ? Colors.blue.shade700 : Colors.orange.shade700,
+                      color: type == 'splitter' 
+                        ? (isDark ? Colors.blue.shade300 : Colors.blue.shade700) 
+                        : (isDark ? Colors.orange.shade300 : Colors.orange.shade700),
                         size: 32,
                     ),
                       const SizedBox(width: 16),
@@ -206,15 +225,33 @@ class _ODPScreenState extends State<ODPScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                            Text(location, style: TextStyle(fontSize: 15, color: Colors.grey.shade600)),
+                            Text(
+                              name, 
+                              style: TextStyle(
+                                fontSize: 20, 
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : Colors.black87,
+                              )
+                            ),
+                            Text(
+                              location, 
+                              style: TextStyle(
+                                fontSize: 15, 
+                                color: isDark ? Colors.white70 : Colors.grey.shade600
+                              )
+                            ),
                           ],
                       ),
                     ),
                   ],
                 ),
                 ),
-                const Divider(height: 1, indent: 24, endIndent: 24),
+                Divider(
+                  height: 1, 
+                  color: isDark ? Colors.grey.shade700 : null,
+                  indent: 24, 
+                  endIndent: 24
+                ),
                 // User List
                 Expanded(
                   child: FutureBuilder<List<dynamic>>(
@@ -224,7 +261,14 @@ class _ODPScreenState extends State<ODPScreen> {
                         return const Center(child: CircularProgressIndicator());
                       }
                       if (snapshot.hasError) {
-                        return Center(child: Text('Error: ${snapshot.error}'));
+                        return Center(
+                          child: Text(
+                            'Error: ${snapshot.error}',
+                            style: TextStyle(
+                              color: isDark ? Colors.white70 : Colors.black87,
+                            ),
+                          )
+                        );
                       }
                       final users = snapshot.data ?? [];
                       return ListView(
@@ -235,14 +279,23 @@ class _ODPScreenState extends State<ODPScreen> {
                             padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
                             child: Text(
                               '${users.length} Pengguna Terhubung',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold, 
+                                fontSize: 16,
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
                             ),
                           ),
                           if (users.isEmpty)
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
                               child: Center(
-                                child: Text('Belum ada pengguna yang terhubung.', style: TextStyle(color: Colors.grey)),
+                                child: Text(
+                                  'Belum ada pengguna yang terhubung.', 
+                                  style: TextStyle(
+                                    color: isDark ? Colors.grey.shade600 : Colors.grey
+                                  )
+                                ),
                               ),
                             )
                           else
@@ -253,15 +306,32 @@ class _ODPScreenState extends State<ODPScreen> {
                               itemBuilder: (context, index) {
                                 final user = users[index];
                                 return ListTile(
-                                  leading: const CircleAvatar(
-                                    child: Icon(Icons.person),
+                                  leading: CircleAvatar(
+                                    backgroundColor: isDark ? Colors.grey.shade800 : null,
+                                    child: Icon(
+                                      Icons.person,
+                                      color: isDark ? Colors.white : null,
+                                    ),
                                   ),
-                                  title: Text(user['username'] ?? 'N/A'),
-                                  subtitle: Text(user['profile'] ?? 'N/A'),
+                                  title: Text(
+                                    user['username'] ?? 'N/A',
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white : Colors.black87,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    user['profile'] ?? 'N/A',
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white70 : Colors.black54,
+                                    ),
+                                  ),
                                 );
                               },
                             ),
-                          const Divider(height: 1),
+                          Divider(
+                            height: 1,
+                            color: isDark ? Colors.grey.shade700 : null,
+                          ),
                           // Detail ODP lainnya jika perlu
                           _buildDetailRow(context, 'Konfigurasi', config),
                           if (mapsLink != null && mapsLink.isNotEmpty)
@@ -275,48 +345,76 @@ class _ODPScreenState extends State<ODPScreen> {
                 Container(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).scaffoldBackgroundColor,
+                    color: isDark ? const Color(0xFF1E1E1E) : Theme.of(context).scaffoldBackgroundColor,
                     boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, -4)),
+                      BoxShadow(
+                        color: isDark 
+                          ? Colors.black.withValues(alpha: 0.3) 
+                          : Colors.black.withValues(alpha: 0.1), 
+                        blurRadius: 8, 
+                        offset: const Offset(0, -4)
+                      ),
                     ],
                   ),
                   child: Row(
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        icon: const Icon(Icons.delete_outline),
-                        label: const Text('HAPUS'),
+                        icon: Icon(
+                          Icons.delete_outline,
+                          color: isDark ? Colors.red.shade300 : Colors.red,
+                        ),
+                        label: Text(
+                          'HAPUS',
+                          style: TextStyle(
+                            color: isDark ? Colors.red.shade300 : Colors.red,
+                          ),
+                        ),
                         onPressed: () {
                           Navigator.pop(context);
                           _deleteODP(odp);
                         },
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.red,
-                          side: const BorderSide(color: Colors.red),
+                          foregroundColor: isDark ? Colors.red.shade300 : Colors.red,
+                          side: BorderSide(
+                            color: isDark ? Colors.red.shade300 : Colors.red
+                          ),
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)
+                            ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton.icon(
-                        icon: const Icon(Icons.edit_outlined),
-                        label: const Text('EDIT'),
+                        icon: Icon(
+                          Icons.edit_outlined,
+                          color: isDark ? Colors.white : Colors.white,
+                        ),
+                        label: Text(
+                          'EDIT',
+                          style: TextStyle(
+                            color: isDark ? Colors.white : Colors.white,
+                          ),
+                        ),
                         onPressed: () {
                           Navigator.pop(context);
                           _editODP(odp);
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue.shade800,
+                          backgroundColor: isDark ? Colors.blue.shade700 : Colors.blue.shade800,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)
+                            ),
                         ),
                       ),
                     ),
                   ],
-                ),
+                )
                 )
               ],
             );
@@ -327,17 +425,26 @@ class _ODPScreenState extends State<ODPScreen> {
   }
 
   Widget _buildDetailRow(BuildContext context, String title, String value, {bool isLink = false, VoidCallback? onTap}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return ListTile(
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+      title: Text(
+        title, 
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: isDark ? Colors.white : Colors.black87,
+        )
+      ),
       subtitle: InkWell(
           onTap: onTap,
                   child: Text(
                     value,
                     style: TextStyle(
-            color: isLink ? Theme.of(context).primaryColor : null,
+                      color: isLink 
+                        ? (isDark ? Colors.blue.shade300 : Theme.of(context).primaryColor) 
+                        : (isDark ? Colors.white70 : Colors.black87),
                       decoration: isLink ? TextDecoration.underline : TextDecoration.none,
-            ),
-          ),
+                    ),
+                  ),
         ),
     );
   }
@@ -356,26 +463,43 @@ class _ODPScreenState extends State<ODPScreen> {
   }
 
   Future<void> _deleteODP(Map<String, dynamic> odp) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         title: Row(
           children: [
             const Icon(Icons.warning_amber_rounded, color: Colors.red),
             const SizedBox(width: 8),
-            const Text('Konfirmasi Hapus'),
+            Text(
+              'Konfirmasi Hapus',
+              style: TextStyle(
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+            ),
           ],
         ),
-        content: Text('Apakah Anda yakin ingin menghapus ODP ${odp['name']}?'),
+        content: Text(
+          'Apakah Anda yakin ingin menghapus ODP ${odp['name']}?',
+          style: TextStyle(
+            color: isDark ? Colors.white70 : Colors.black87,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('BATAL'),
+            child: Text(
+              'BATAL',
+              style: TextStyle(
+                color: isDark ? Colors.blue.shade300 : Colors.blue,
+              ),
+            ),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: isDark ? Colors.red.shade700 : Colors.red,
             ),
             child: const Text('HAPUS'),
           ),
@@ -398,9 +522,9 @@ class _ODPScreenState extends State<ODPScreen> {
       final data = jsonDecode(response.body);
       if (data['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('ODP berhasil dihapus'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('ODP berhasil dihapus'),
+            backgroundColor: isDark ? Colors.grey[800] : Colors.green,
           ),
         );
         _loadODPList();
@@ -412,7 +536,7 @@ class _ODPScreenState extends State<ODPScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: isDark ? Colors.grey[800] : Colors.red,
           ),
         );
       }
@@ -519,43 +643,84 @@ class _ODPScreenState extends State<ODPScreen> {
   }
 
   Widget _buildMenuButton() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return PopupMenuButton<String>(
-      icon: const Icon(Icons.filter_list),
+      icon: Icon(
+        Icons.filter_list,
+        color: isDark ? Colors.white : Colors.black87,
+      ),
       tooltip: 'Filter & Urutkan',
       itemBuilder: (context) => [
-        const PopupMenuItem(
+        PopupMenuItem(
           enabled: false,
-          child: Text('Urutkan Berdasarkan', style: TextStyle(fontWeight: FontWeight.bold)),
+          child: Text(
+            'Urutkan Berdasarkan', 
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black87,
+            )
+          ),
         ),
         CheckedPopupMenuItem(
           value: 'sort_name_asc',
           checked: _sortOrder == 'name_asc',
-          child: const Text('Nama (A-Z)'),
+          child: Text(
+            'Nama (A-Z)',
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
         ),
         CheckedPopupMenuItem(
           value: 'sort_name_desc',
           checked: _sortOrder == 'name_desc',
-          child: const Text('Nama (Z-A)'),
+          child: Text(
+            'Nama (Z-A)',
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
         ),
         const PopupMenuDivider(),
-        const PopupMenuItem(
+        PopupMenuItem(
           enabled: false,
-          child: Text('Filter Tipe', style: TextStyle(fontWeight: FontWeight.bold)),
+          child: Text(
+            'Filter Tipe', 
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black87,
+            )
+          ),
         ),
         CheckedPopupMenuItem(
           value: 'filter_all',
           checked: _selectedType == null || _selectedType == 'all',
-          child: const Text('Semua Tipe'),
+          child: Text(
+            'Semua Tipe',
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
         ),
         CheckedPopupMenuItem(
           value: 'filter_splitter',
           checked: _selectedType == 'splitter',
-          child: const Text('Hanya Splitter'),
+          child: Text(
+            'Hanya Splitter',
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
         ),
         CheckedPopupMenuItem(
           value: 'filter_ratio',
           checked: _selectedType == 'ratio',
-          child: const Text('Hanya Ratio'),
+          child: Text(
+            'Hanya Ratio',
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
         ),
       ],
       onSelected: (value) {
@@ -571,6 +736,7 @@ class _ODPScreenState extends State<ODPScreen> {
   }
 
   Widget _buildStatItem(IconData icon, String text, Color color) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -590,8 +756,8 @@ class _ODPScreenState extends State<ODPScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredAndSortedList = _getFilteredAndSortedList();
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final filteredAndSortedList = _getFilteredAndSortedList();
 
     final totalCount = filteredAndSortedList.length;
     final splitterCount = filteredAndSortedList.where((odp) => odp['type'] == 'splitter').length;
@@ -628,20 +794,33 @@ class _ODPScreenState extends State<ODPScreen> {
             Padding(
               padding: const EdgeInsets.all(16),
               child: Card(
+                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                 elevation: 4,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: TextField(
                   controller: _searchController,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
                   decoration: InputDecoration(
                     hintText: 'Cari ODP...',
-                    prefixIcon: const Icon(Icons.search),
+                    hintStyle: TextStyle(
+                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                    ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.clear),
+                            icon: Icon(
+                              Icons.clear,
+                              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                            ),
                             onPressed: () {
                               setState(() {
                                 _searchController.clear();
@@ -665,12 +844,12 @@ class _ODPScreenState extends State<ODPScreen> {
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : filteredAndSortedList.isEmpty
-                        ? const Center(
+                        ? Center(
                             child: Text(
                               'Tidak ada ODP yang ditemukan',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.grey,
+                                color: isDark ? Colors.grey : Colors.grey,
                               ),
                             ),
                           )
@@ -698,6 +877,7 @@ class _ODPScreenState extends State<ODPScreen> {
                                         duration: const Duration(milliseconds: 200),
                                         curve: Curves.easeInOut,
                                         child: Card(
+                                          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                                           elevation: 1,
                                           margin: EdgeInsets.zero,
                                           shape: RoundedRectangleBorder(
@@ -710,11 +890,13 @@ class _ODPScreenState extends State<ODPScreen> {
                                                 CircleAvatar(
                                                   radius: 20,
                                                   backgroundColor: type == 'splitter'
-                                                      ? Colors.blue.shade50
-                                                      : Colors.orange.shade50,
+                                                      ? (isDark ? Colors.blue.shade900 : Colors.blue.shade50)
+                                                      : (isDark ? Colors.orange.shade900 : Colors.orange.shade50),
                                                   child: Icon(
                                                     type == 'splitter' ? Icons.call_split : Icons.percent,
-                                                    color: type == 'splitter' ? Colors.blue.shade700 : Colors.orange.shade700,
+                                                    color: type == 'splitter' 
+                                                      ? (isDark ? Colors.blue.shade300 : Colors.blue.shade700) 
+                                                      : (isDark ? Colors.orange.shade300 : Colors.orange.shade700),
                                                     size: 22,
                                                   ),
                                                 ),
@@ -725,15 +907,19 @@ class _ODPScreenState extends State<ODPScreen> {
                                                     children: [
                                                       Text(
                                                         name,
-                                                        style: const TextStyle(
+                                                        style: TextStyle(
                                                           fontWeight: FontWeight.bold,
                                                           fontSize: 15,
+                                                          color: isDark ? Colors.white : Colors.black87,
                                                         ),
                                                       ),
                                                       const SizedBox(height: 2),
                                                       Text(
                                                         location,
-                                                        style: const TextStyle(fontSize: 13, color: Colors.black54),
+                                                        style: TextStyle(
+                                                          fontSize: 13, 
+                                                          color: isDark ? Colors.white70 : Colors.black54
+                                                        ),
                                                         overflow: TextOverflow.ellipsis,
                                                       ),
                                                       if (mapsLink?.isNotEmpty == true) ...[
@@ -752,9 +938,9 @@ class _ODPScreenState extends State<ODPScreen> {
                                                               Expanded(
                                                                 child: Text(
                                                                   mapsLink!,
-                                                                  style: const TextStyle(
+                                                                  style: TextStyle(
                                                                     fontSize: 12,
-                                                                    color: Colors.blue,
+                                                                    color: isDark ? Colors.blue.shade300 : Colors.blue,
                                                                     decoration: TextDecoration.underline,
                                                                   ),
                                                                   overflow: TextOverflow.ellipsis,
@@ -772,7 +958,9 @@ class _ODPScreenState extends State<ODPScreen> {
                                                 Container(
                                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                                   decoration: BoxDecoration(
-                                                      color: type == 'splitter' ? Colors.blue.shade100 : Colors.orange.shade100,
+                                                      color: type == 'splitter' 
+                                                        ? (isDark ? Colors.blue.shade900 : Colors.blue.shade100) 
+                                                        : (isDark ? Colors.orange.shade900 : Colors.orange.shade100),
                                                       borderRadius: BorderRadius.circular(16),
                                                   ),
                                                   child: Text(
@@ -780,7 +968,9 @@ class _ODPScreenState extends State<ODPScreen> {
                                                         ? splitterType
                                                         : '$ratioUsed/$ratioTotal',
                                                     style: TextStyle(
-                                                        color: type == 'splitter' ? Colors.blue.shade800 : Colors.orange.shade800,
+                                                        color: type == 'splitter' 
+                                                          ? (isDark ? Colors.blue.shade300 : Colors.blue.shade800) 
+                                                          : (isDark ? Colors.orange.shade300 : Colors.orange.shade800),
                                                       fontWeight: FontWeight.bold,
                                                         fontSize: 13,
                                                     ),
@@ -802,12 +992,12 @@ class _ODPScreenState extends State<ODPScreen> {
                                   spacing: 12,
                                   runSpacing: 8,
                                   children: [
-                                    _buildStatItem(Icons.device_hub, '$totalCount ODP', Colors.green.shade700),
+                                    _buildStatItem(Icons.device_hub, '$totalCount ODP', isDark ? Colors.green.shade300 : Colors.green.shade700),
                                     if (splitterCount > 0 && ratioCount > 0) ...[
-                                      const Text('•', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
-                                      _buildStatItem(Icons.call_split, '$splitterCount Splitter', Colors.blue.shade700),
-                                      const Text('•', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
-                                      _buildStatItem(Icons.percent, '$ratioCount Ratio', Colors.orange.shade700),
+                                      Text('•', style: TextStyle(color: isDark ? Colors.grey.shade600 : Colors.grey, fontWeight: FontWeight.bold)),
+                                      _buildStatItem(Icons.call_split, '$splitterCount Splitter', isDark ? Colors.blue.shade300 : Colors.blue.shade700),
+                                      Text('•', style: TextStyle(color: isDark ? Colors.grey.shade600 : Colors.grey, fontWeight: FontWeight.bold)),
+                                      _buildStatItem(Icons.percent, '$ratioCount Ratio', isDark ? Colors.orange.shade300 : Colors.orange.shade700),
                                     ],
                                   ],
                                 ),

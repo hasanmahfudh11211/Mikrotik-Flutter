@@ -89,10 +89,11 @@ class _BillingScreenState extends State<BillingScreen> {
   }
 
   void _showBillingDetailSheet(Map<String, dynamic> user) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: isDark ? const Color(0xFF1E1E1E) : Theme.of(context).scaffoldBackgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -112,8 +113,15 @@ class _BillingScreenState extends State<BillingScreen> {
               return StatefulBuilder(
                 builder: (context, setDialogState) {
                   return AlertDialog(
+                    backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    title: const Text('Tambah Pembayaran', style: TextStyle(fontWeight: FontWeight.bold)),
+                    title: Text(
+                      'Tambah Pembayaran', 
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black87,
+                      )
+                    ),
                     content: Form(
                       key: formKey,
                       child: SingleChildScrollView(
@@ -122,30 +130,93 @@ class _BillingScreenState extends State<BillingScreen> {
                           children: [
                             TextFormField(
                               controller: amountController,
+                              style: TextStyle(
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
                               keyboardType: TextInputType.number,
                               inputFormatters: [CurrencyInputFormatter()],
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: 'Nominal (Rp)',
+                                labelStyle: TextStyle(
+                                  color: isDark ? Colors.white70 : Colors.black54,
+                                ),
                                 prefixText: 'Rp ',
-                                border: OutlineInputBorder(),
+                                prefixStyle: TextStyle(
+                                  color: isDark ? Colors.white : Colors.black87,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: isDark ? Colors.blue.shade300 : Colors.blue,
+                                  ),
+                                ),
                               ),
                               validator: (v) => v == null || v.isEmpty ? 'Nominal wajib diisi' : null,
                             ),
                             const SizedBox(height: 16),
                             DropdownButtonFormField<String>(
+                              dropdownColor: isDark ? const Color(0xFF2D2D2D) : Colors.white,
                               value: selectedMethod,
-                              items: const [
-                                DropdownMenuItem(value: 'Cash', child: Text('Cash')),
-                                DropdownMenuItem(value: 'Transfer', child: Text('Transfer')),
+                              items: [
+                                DropdownMenuItem(
+                                  value: 'Cash', 
+                                  child: Text(
+                                    'Cash',
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white : Colors.black87,
+                                    ),
+                                  )
+                                ),
+                                DropdownMenuItem(
+                                  value: 'Transfer', 
+                                  child: Text(
+                                    'Transfer',
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white : Colors.black87,
+                                    ),
+                                  )
+                                ),
                               ],
                               onChanged: (v) {
                                 setDialogState(() {
                                   selectedMethod = v!;
                                 });
                               },
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: 'Metode',
-                                border: OutlineInputBorder(),
+                                labelStyle: TextStyle(
+                                  color: isDark ? Colors.white70 : Colors.black54,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: isDark ? Colors.blue.shade300 : Colors.blue,
+                                  ),
+                                ),
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -164,17 +235,44 @@ class _BillingScreenState extends State<BillingScreen> {
                                 }
                               },
                               child: InputDecorator(
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   labelText: 'Tanggal Pembayaran',
-                                  border: OutlineInputBorder(),
+                                  labelStyle: TextStyle(
+                                    color: isDark ? Colors.white70 : Colors.black54,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                                    ),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: isDark ? Colors.blue.shade300 : Colors.blue,
+                                    ),
+                                  ),
                                 ),
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.calendar_today, size: 18, color: Colors.blueGrey),
+                                    Icon(
+                                      Icons.calendar_today, 
+                                      size: 18, 
+                                      color: isDark ? Colors.grey.shade400 : Colors.blueGrey
+                                    ),
                                     const SizedBox(width: 8),
                                     Text(
                                       DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(paymentDate),
-                                      style: const TextStyle(fontSize: 13, color: Colors.black54),
+                                      style: TextStyle(
+                                        fontSize: 13, 
+                                        color: isDark ? Colors.white70 : Colors.black54
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -183,9 +281,32 @@ class _BillingScreenState extends State<BillingScreen> {
                             const SizedBox(height: 16),
                             TextFormField(
                               controller: noteController,
-                              decoration: const InputDecoration(
+                              style: TextStyle(
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
+                              decoration: InputDecoration(
                                 labelText: 'Catatan (opsional)',
-                                border: OutlineInputBorder(),
+                                labelStyle: TextStyle(
+                                  color: isDark ? Colors.white70 : Colors.black54,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: isDark ? Colors.blue.shade300 : Colors.blue,
+                                  ),
+                                ),
                               ),
                               minLines: 1,
                               maxLines: 3,
@@ -199,7 +320,12 @@ class _BillingScreenState extends State<BillingScreen> {
                         onPressed: () {
                           Navigator.of(dialogContext).pop();
                         },
-                        child: const Text('BATAL'),
+                        child: Text(
+                          'BATAL',
+                          style: TextStyle(
+                            color: isDark ? Colors.blue.shade300 : Colors.blue,
+                          ),
+                        ),
                       ),
                       ElevatedButton(
                         onPressed: isSubmitting
@@ -256,7 +382,10 @@ class _BillingScreenState extends State<BillingScreen> {
                                     Navigator.of(dialogContext).pop();
                                     if (context.mounted) {
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('Gagal: ${respData['error'] ?? 'Unknown error'}'), backgroundColor: Colors.red),
+                                        SnackBar(
+                                          content: Text('Gagal: ${respData['error'] ?? 'Unknown error'}'), 
+                                          backgroundColor: isDark ? Colors.grey[800] : Colors.red
+                                        ),
                                       );
                                     }
                                   }
@@ -264,7 +393,10 @@ class _BillingScreenState extends State<BillingScreen> {
                                   Navigator.of(dialogContext).pop();
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+                                      SnackBar(
+                                        content: Text('Error: ${e.toString()}'), 
+                                        backgroundColor: isDark ? Colors.grey[800] : Colors.red
+                                      ),
                                     );
                                   }
                                 } finally {
@@ -298,7 +430,7 @@ class _BillingScreenState extends State<BillingScreen> {
               constraints: const BoxConstraints(maxWidth: 420),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Theme.of(context).scaffoldBackgroundColor,
+                  color: isDark ? const Color(0xFF1E1E1E) : Theme.of(context).scaffoldBackgroundColor,
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 child: ListView(
@@ -311,7 +443,7 @@ class _BillingScreenState extends State<BillingScreen> {
                         height: 4,
                         margin: const EdgeInsets.only(bottom: 16),
                         decoration: BoxDecoration(
-                          color: Colors.grey[300],
+                          color: isDark ? Colors.grey.shade700 : Colors.grey[300],
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -323,16 +455,19 @@ class _BillingScreenState extends State<BillingScreen> {
                         children: [
                           Text(
                             user['username'] ?? '-',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
-                              color: Color(0xFF1565C0),
+                              color: isDark ? Colors.blue.shade300 : const Color(0xFF1565C0),
                             ),
                           ),
                           if (user['profile'] != null)
                             Text(
                               'Profile: ${user['profile']}',
-                              style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                              style: TextStyle(
+                                color: isDark ? Colors.white70 : Colors.grey[600], 
+                                fontSize: 13
+                              ),
                             ),
                           const SizedBox(height: 16),
                         ],
@@ -341,25 +476,44 @@ class _BillingScreenState extends State<BillingScreen> {
                     const SizedBox(height: 2),
                     Row(
                       children: [
-                        Icon(Icons.payments, color: Colors.green.shade700, size: 22),
+                        Icon(
+                          Icons.payments, 
+                          color: isDark ? Colors.green.shade300 : Colors.green.shade700, 
+                          size: 22
+                        ),
                         const SizedBox(width: 10),
-                        const Text('History Pembayaran', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                        Text(
+                          'History Pembayaran', 
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600, 
+                            fontSize: 16,
+                            color: isDark ? Colors.white : Colors.black87,
+                          )
+                        ),
                         const Spacer(),
                       ],
                     ),
-                    const Divider(),
+                    Divider(
+                      color: isDark ? Colors.grey.shade700 : null,
+                    ),
                     // Payment summary
                     if (_filteredPayments(user).isNotEmpty) ...[
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
+                          color: isDark ? Colors.blue.shade900 : Colors.blue.shade50,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.blue.shade200),
+                          border: Border.all(
+                            color: isDark ? Colors.blue.shade700 : Colors.blue.shade200
+                          ),
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.analytics, color: Colors.blue.shade700, size: 20),
+                            Icon(
+                              Icons.analytics, 
+                              color: isDark ? Colors.blue.shade300 : Colors.blue.shade700, 
+                              size: 20
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Column(
@@ -369,7 +523,7 @@ class _BillingScreenState extends State<BillingScreen> {
                                     _showAllPayments ? 'Total Semua Pembayaran' : 'Total Pembayaran ${DateFormat('MMMM yyyy', 'id_ID').format(_selectedMonth)}',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.blue.shade700,
+                                      color: isDark ? Colors.blue.shade300 : Colors.blue.shade700,
                                       fontSize: 13,
                                     ),
                                   ),
@@ -378,7 +532,7 @@ class _BillingScreenState extends State<BillingScreen> {
                                     'Rp ${currencyFormat.format(_filteredPayments(user).fold<double>(0, (sum, p) => sum + (double.tryParse(p['amount']?.toString() ?? '0') ?? 0)))}',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.blue.shade800,
+                                      color: isDark ? Colors.blue.shade200 : Colors.blue.shade800,
                                       fontSize: 16,
                                     ),
                                   ),
@@ -388,13 +542,13 @@ class _BillingScreenState extends State<BillingScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: Colors.blue.shade100,
+                                color: isDark ? Colors.blue.shade900 : Colors.blue.shade100,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 '${_filteredPayments(user).length} pembayaran',
                                 style: TextStyle(
-                                  color: Colors.blue.shade700,
+                                  color: isDark ? Colors.blue.shade300 : Colors.blue.shade700,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 12,
                                 ),
@@ -412,13 +566,20 @@ class _BillingScreenState extends State<BillingScreen> {
                             key: const ValueKey('empty'),
                             children: [
                               const SizedBox(height: 32),
-                              Icon(Icons.receipt_long, color: Colors.grey, size: 54),
+                              Icon(
+                                Icons.receipt_long, 
+                                color: isDark ? Colors.grey.shade600 : Colors.grey, 
+                                size: 54
+                              ),
                               const SizedBox(height: 12),
                               Text(
                                 !_showAllPayments 
                                   ? 'Tidak ada pembayaran di ${DateFormat('MMMM yyyy', 'id_ID').format(_selectedMonth)}.'
                                   : 'Belum ada pembayaran.',
-                                style: const TextStyle(color: Colors.black54, fontSize: 15),
+                                style: TextStyle(
+                                  color: isDark ? Colors.white70 : Colors.black54, 
+                                  fontSize: 15
+                                ),
                                 textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 8),
@@ -426,7 +587,10 @@ class _BillingScreenState extends State<BillingScreen> {
                                 !_showAllPayments 
                                   ? 'Coba pilih bulan lain atau tekan tombol "Semua" untuk melihat semua pembayaran.'
                                   : 'Tekan tombol di bawah untuk menambah pembayaran baru.',
-                                style: const TextStyle(color: Colors.black38, fontSize: 13),
+                                style: TextStyle(
+                                  color: isDark ? Colors.white54 : Colors.black38, 
+                                  fontSize: 13
+                                ),
                                 textAlign: TextAlign.center,
                               ),
                             ],
@@ -452,10 +616,18 @@ class _BillingScreenState extends State<BillingScreen> {
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(18),
                                       side: isCurrentMonth
-                                        ? BorderSide(color: Colors.blue.shade400, width: 2)
-                                        : BorderSide(color: Colors.grey.shade200, width: 1),
+                                        ? BorderSide(
+                                            color: isDark ? Colors.blue.shade700 : Colors.blue.shade400, 
+                                            width: 2
+                                          )
+                                        : BorderSide(
+                                            color: isDark ? Colors.grey.shade700 : Colors.grey.shade200, 
+                                            width: 1
+                                          ),
                                     ),
-                                    color: isCurrentMonth ? Colors.blue.shade50 : Colors.white,
+                                    color: isCurrentMonth 
+                                      ? (isDark ? Colors.blue.shade900 : Colors.blue.shade50) 
+                                      : (isDark ? const Color(0xFF2D2D2D) : Colors.white),
                                     child: Padding(
                                       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
                                       child: Column(
@@ -463,11 +635,21 @@ class _BillingScreenState extends State<BillingScreen> {
                                         children: [
                                           Row(
                                             children: [
-                                              Icon(Icons.check_circle, color: Colors.green, size: 22),
+                                              Icon(
+                                                Icons.check_circle, 
+                                                color: Colors.green, 
+                                                size: 22
+                                              ),
                                               const SizedBox(width: 8),
                                               Expanded(
-                                                child: Text('Rp ${currencyFormat.format(double.tryParse(amount) ?? 0)}',
-                                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                                                child: Text(
+                                                  'Rp ${currencyFormat.format(double.tryParse(amount) ?? 0)}',
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.bold, 
+                                                    fontSize: 18,
+                                                    color: isDark ? Colors.white : Colors.black87,
+                                                  )
+                                                ),
                                               ),
                                               _buildMethodChip(method),
                                               if (isCurrentMonth) ...[
@@ -475,10 +657,17 @@ class _BillingScreenState extends State<BillingScreen> {
                                                 Container(
                                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                                   decoration: BoxDecoration(
-                                                    color: Colors.blue.shade100,
+                                                    color: isDark ? Colors.blue.shade900 : Colors.blue.shade100,
                                                     borderRadius: BorderRadius.circular(8),
                                                   ),
-                                                  child: const Text('Bulan Ini', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 11)),
+                                                  child: Text(
+                                                    'Bulan Ini', 
+                                                    style: TextStyle(
+                                                      color: isDark ? Colors.blue.shade300 : Colors.blue, 
+                                                      fontWeight: FontWeight.bold, 
+                                                      fontSize: 11
+                                                    )
+                                                  ),
                                                 ),
                                               ],
                                             ],
@@ -488,13 +677,13 @@ class _BillingScreenState extends State<BillingScreen> {
                                             Container(
                                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                               decoration: BoxDecoration(
-                                                color: Colors.blue.shade100,
+                                                color: isDark ? Colors.blue.shade900 : Colors.blue.shade100,
                                                 borderRadius: BorderRadius.circular(8),
                                               ),
                                               child: Text(
                                                 'Filter: ${DateFormat('MMMM yyyy', 'id_ID').format(_selectedMonth)}',
                                                 style: TextStyle(
-                                                  color: Colors.blue.shade700,
+                                                  color: isDark ? Colors.blue.shade300 : Colors.blue.shade700,
                                                   fontSize: 10,
                                                   fontWeight: FontWeight.w600,
                                                 ),
@@ -504,11 +693,18 @@ class _BillingScreenState extends State<BillingScreen> {
                                           const SizedBox(height: 8),
                                           Row(
                                             children: [
-                                              Icon(Icons.calendar_today, size: 16, color: Colors.blueGrey.shade300),
+                                              Icon(
+                                                Icons.calendar_today, 
+                                                size: 16, 
+                                                color: isDark ? Colors.grey.shade400 : Colors.blueGrey.shade300
+                                              ),
                                               const SizedBox(width: 6),
                                               Text(
                                                 'Tanggal: ${DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(DateTime.parse(paymentDate))}',
-                                                style: const TextStyle(fontSize: 13, color: Colors.black54),
+                                                style: TextStyle(
+                                                  fontSize: 13, 
+                                                  color: isDark ? Colors.white70 : Colors.black54
+                                                ),
                                               ),
                                             ],
                                           ),
@@ -517,9 +713,19 @@ class _BillingScreenState extends State<BillingScreen> {
                                               padding: const EdgeInsets.only(top: 2),
                                               child: Row(
                                                 children: [
-                                                  Icon(Icons.person, size: 15, color: Colors.blueGrey.shade300),
+                                                  Icon(
+                                                    Icons.person, 
+                                                    size: 15, 
+                                                    color: isDark ? Colors.grey.shade400 : Colors.blueGrey.shade300
+                                                  ),
                                                   const SizedBox(width: 6),
-                                                  Text('Oleh: $createdBy', style: const TextStyle(fontSize: 12, color: Colors.black45)),
+                                                  Text(
+                                                    'Oleh: $createdBy', 
+                                                    style: TextStyle(
+                                                      fontSize: 12, 
+                                                      color: isDark ? Colors.white70 : Colors.black45
+                                                    )
+                                                  ),
                                                 ],
                                               ),
                                             ),
@@ -528,9 +734,21 @@ class _BillingScreenState extends State<BillingScreen> {
                                               padding: const EdgeInsets.only(top: 2),
                                               child: Row(
                                                 children: [
-                                                  const Icon(Icons.info_outline, size: 15, color: Colors.orange),
+                                                  const Icon(
+                                                    Icons.info_outline, 
+                                                    size: 15, 
+                                                    color: Colors.orange
+                                                  ),
                                                   const SizedBox(width: 6),
-                                                  Expanded(child: Text(note, style: const TextStyle(fontSize: 12, color: Colors.black54))),
+                                                  Expanded(
+                                                    child: Text(
+                                                      note, 
+                                                      style: TextStyle(
+                                                        fontSize: 12, 
+                                                        color: isDark ? Colors.white70 : Colors.black54
+                                                      )
+                                                    )
+                                                  ),
                                                 ],
                                               ),
                                             ),
@@ -542,15 +760,26 @@ class _BillingScreenState extends State<BillingScreen> {
                                                 message: 'Edit pembayaran',
                                                 child: ElevatedButton.icon(
                                                   onPressed: () => _showEditPaymentDialog(p, user),
-                                                  icon: const Icon(Icons.edit, size: 18),
-                                                  label: const Text('Edit'),
+                                                  icon: Icon(
+                                                    Icons.edit, 
+                                                    size: 18,
+                                                    color: isDark ? Colors.blue.shade300 : Colors.blue.shade800,
+                                                  ),
+                                                  label: Text(
+                                                    'Edit',
+                                                    style: TextStyle(
+                                                      color: isDark ? Colors.blue.shade300 : Colors.blue.shade800,
+                                                    ),
+                                                  ),
                                                   style: ElevatedButton.styleFrom(
-                                                    backgroundColor: Colors.blue.shade50,
-                                                    foregroundColor: Colors.blue.shade800,
+                                                    backgroundColor: isDark ? Colors.blue.shade900 : Colors.blue.shade50,
+                                                    foregroundColor: isDark ? Colors.blue.shade300 : Colors.blue.shade800,
                                                     elevation: 0,
                                                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                                     textStyle: const TextStyle(fontWeight: FontWeight.bold),
-                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius: BorderRadius.circular(8)
+                                                    ),
                                                   ),
                                                 ),
                                               ),
@@ -559,15 +788,26 @@ class _BillingScreenState extends State<BillingScreen> {
                                                 message: 'Hapus pembayaran',
                                                 child: ElevatedButton.icon(
                                                   onPressed: () => _confirmDeletePayment(p),
-                                                  icon: const Icon(Icons.delete, size: 18),
-                                                  label: const Text('Hapus'),
+                                                  icon: Icon(
+                                                    Icons.delete, 
+                                                    size: 18,
+                                                    color: isDark ? Colors.red.shade300 : Colors.red.shade800,
+                                                  ),
+                                                  label: Text(
+                                                    'Hapus',
+                                                    style: TextStyle(
+                                                      color: isDark ? Colors.red.shade300 : Colors.red.shade800,
+                                                    ),
+                                                  ),
                                                   style: ElevatedButton.styleFrom(
-                                                    backgroundColor: Colors.red.shade50,
-                                                    foregroundColor: Colors.red.shade800,
+                                                    backgroundColor: isDark ? Colors.red.shade900 : Colors.red.shade50,
+                                                    foregroundColor: isDark ? Colors.red.shade300 : Colors.red.shade800,
                                                     elevation: 0,
                                                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                                     textStyle: const TextStyle(fontWeight: FontWeight.bold),
-                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius: BorderRadius.circular(8)
+                                                    ),
                                                   ),
                                                 ),
                                               ),
@@ -590,12 +830,21 @@ class _BillingScreenState extends State<BillingScreen> {
                         child: ElevatedButton.icon(
                           onPressed: showAddPaymentDialog,
                           icon: const Icon(Icons.add_circle, color: Colors.white),
-                          label: const Text('Tambah Pembayaran', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          label: const Text(
+                            'Tambah Pembayaran', 
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold, 
+                              fontSize: 16,
+                              color: Colors.white,
+                            )
+                          ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green.shade700,
+                            backgroundColor: isDark ? Colors.green.shade700 : Colors.green.shade700,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)
+                            ),
                             elevation: 2,
                           ),
                         ),
@@ -685,7 +934,7 @@ class _BillingScreenState extends State<BillingScreen> {
                         icon: const Icon(Icons.refresh),
                         label: const Text('Coba Lagi'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
+                          backgroundColor: isDark ? Colors.blue.shade700 : Colors.blue,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                         ),
@@ -718,7 +967,7 @@ class _BillingScreenState extends State<BillingScreen> {
                       icon: const Icon(Icons.refresh),
                       label: const Text('Refresh'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
+                        backgroundColor: isDark ? Colors.blue.shade700 : Colors.blue,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                       ),
@@ -742,19 +991,34 @@ class _BillingScreenState extends State<BillingScreen> {
                           Expanded(
                             child: Container(
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: isDark ? const Color(0xFF2D2D2D) : Colors.white,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: TextField(
+                                controller: _searchUserController,
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : Colors.black87,
+                                ),
                                 decoration: InputDecoration(
                                   hintText: 'Cari...',
-                                  prefixIcon: const Icon(Icons.search, size: 18),
+                                  hintStyle: TextStyle(
+                                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
+                                  ),
+                                  prefixIcon: Icon(
+                                    Icons.search, 
+                                    size: 18,
+                                    color: isDark ? Colors.grey.shade400 : null,
+                                  ),
                                   contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
                                   border: InputBorder.none,
                                   isDense: true,
                                   suffixIcon: _searchQuery.isNotEmpty
                                       ? IconButton(
-                                          icon: const Icon(Icons.clear, size: 18),
+                                          icon: Icon(
+                                            Icons.clear, 
+                                            size: 18,
+                                            color: isDark ? Colors.grey.shade400 : null,
+                                          ),
                                           onPressed: () {
                                             _searchUserController.clear();
                                             setState(() {
@@ -775,13 +1039,17 @@ class _BillingScreenState extends State<BillingScreen> {
                           const SizedBox(width: 8),
                           Container(
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: isDark ? const Color(0xFF2D2D2D) : Colors.white,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Tooltip(
                               message: _showFilterPanel ? 'Sembunyikan filter' : 'Tampilkan filter',
                               child: IconButton(
-                                icon: Icon(_showFilterPanel ? Icons.filter_alt_off : Icons.filter_alt, color: Colors.blue.shade700, size: 24),
+                                icon: Icon(
+                                  _showFilterPanel ? Icons.filter_alt_off : Icons.filter_alt, 
+                                  color: isDark ? Colors.blue.shade300 : Colors.blue.shade700, 
+                                  size: 24
+                                ),
                                 onPressed: () {
                                   setState(() {
                                     _showFilterPanel = !_showFilterPanel;
@@ -802,11 +1070,11 @@ class _BillingScreenState extends State<BillingScreen> {
                           margin: const EdgeInsets.only(top: 2, bottom: 8),
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: isDark ? const Color(0xFF2D2D2D) : Colors.white,
                             borderRadius: BorderRadius.circular(8),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.blue.shade50,
+                                color: isDark ? Colors.black45 : Colors.blue.shade50,
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
@@ -824,7 +1092,9 @@ class _BillingScreenState extends State<BillingScreen> {
                                   style: OutlinedButton.styleFrom(
                                     padding: EdgeInsets.zero,
                                     shape: const CircleBorder(),
-                                    side: BorderSide(color: Colors.blue.shade200),
+                                    side: BorderSide(
+                                      color: isDark ? Colors.blue.shade700 : Colors.blue.shade200
+                                    ),
                                   ),
                                   onPressed: () {
                                     setState(() {
@@ -832,7 +1102,11 @@ class _BillingScreenState extends State<BillingScreen> {
                                       _tempSelectedMonth = DateTime(_tempSelectedMonth!.year, _tempSelectedMonth!.month, 1);
                                     });
                                   },
-                                  child: const Icon(Icons.chevron_left, size: 16, color: Color(0xFF1976D2)),
+                                  child: Icon(
+                                    Icons.chevron_left, 
+                                    size: 16, 
+                                    color: isDark ? Colors.blue.shade300 : const Color(0xFF1976D2)
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 6),
@@ -856,15 +1130,17 @@ class _BillingScreenState extends State<BillingScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: Colors.blue.shade50,
+                                    color: isDark ? Colors.blue.shade900 : Colors.blue.shade50,
                                     borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(color: Colors.blue.shade200),
+                                    border: Border.all(
+                                      color: isDark ? Colors.blue.shade700 : Colors.blue.shade200
+                                    ),
                                   ),
                                   child: Text(
                                     DateFormat('MMM yyyy', 'id_ID').format((_tempSelectedMonth ?? _selectedMonth)),
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      color: Color(0xFF1976D2),
+                                      color: isDark ? Colors.blue.shade300 : const Color(0xFF1976D2),
                                       fontSize: 12,
                                     ),
                                   ),
@@ -879,7 +1155,9 @@ class _BillingScreenState extends State<BillingScreen> {
                                   style: OutlinedButton.styleFrom(
                                     padding: EdgeInsets.zero,
                                     shape: const CircleBorder(),
-                                    side: BorderSide(color: Colors.blue.shade200),
+                                    side: BorderSide(
+                                      color: isDark ? Colors.blue.shade700 : Colors.blue.shade200
+                                    ),
                                   ),
                                   onPressed: () {
                                     setState(() {
@@ -887,7 +1165,11 @@ class _BillingScreenState extends State<BillingScreen> {
                                       _tempSelectedMonth = DateTime(_tempSelectedMonth!.year, _tempSelectedMonth!.month, 1);
                                     });
                                   },
-                                  child: const Icon(Icons.chevron_right, size: 16, color: Color(0xFF1976D2)),
+                                  child: Icon(
+                                    Icons.chevron_right, 
+                                    size: 16, 
+                                    color: isDark ? Colors.blue.shade300 : const Color(0xFF1976D2)
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 6),
@@ -896,10 +1178,12 @@ class _BillingScreenState extends State<BillingScreen> {
                                 height: 28,
                                 child: ElevatedButton(
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blue.shade700,
+                                    backgroundColor: isDark ? Colors.blue.shade700 : Colors.blue.shade700,
                                     foregroundColor: Colors.white,
                                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(6)
+                                    ),
                                     textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                                   ),
                                   onPressed: () {
@@ -921,8 +1205,12 @@ class _BillingScreenState extends State<BillingScreen> {
                                 child: OutlinedButton(
                                   style: OutlinedButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                                    side: BorderSide(color: Colors.blue.shade200),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(6)
+                                    ),
+                                    side: BorderSide(
+                                      color: isDark ? Colors.blue.shade700 : Colors.blue.shade200
+                                    ),
                                   ),
                                   onPressed: () {
                                     setState(() {
@@ -930,7 +1218,14 @@ class _BillingScreenState extends State<BillingScreen> {
                                       _showFilterPanel = false; // Close the filter panel after applying
                                     });
                                   },
-                                  child: const Text('Semua', style: TextStyle(color: Color(0xFF1976D2), fontWeight: FontWeight.bold, fontSize: 12)),
+                                  child: Text(
+                                    'Semua', 
+                                    style: TextStyle(
+                                      color: isDark ? Colors.blue.shade300 : const Color(0xFF1976D2), 
+                                      fontWeight: FontWeight.bold, 
+                                      fontSize: 12
+                                    )
+                                  ),
                                 ),
                               ),
                             ],
@@ -973,17 +1268,30 @@ class _BillingScreenState extends State<BillingScreen> {
                             margin: EdgeInsets.zero,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
-                              side: BorderSide(color: _hasUserPaidForSelectedMonth(user) ? Colors.green.shade100 : Colors.red.shade100, width: 1.2),
+                              side: BorderSide(
+                                color: _hasUserPaidForSelectedMonth(user) 
+                                  ? (isDark ? Colors.green.shade700 : Colors.green.shade100) 
+                                  : (isDark ? Colors.red.shade700 : Colors.red.shade100), 
+                                width: 1.2
+                              ),
                             ),
-                            color: Colors.white,
+                            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                             child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                               child: Row(
                                 children: [
                                   CircleAvatar(
                                     radius: 22,
-                                    backgroundColor: _hasUserPaidForSelectedMonth(user) ? Colors.green.shade50 : Colors.red.shade50,
-                                    child: Icon(Icons.payments, color: _hasUserPaidForSelectedMonth(user) ? Colors.green : Colors.red, size: 26),
+                                    backgroundColor: _hasUserPaidForSelectedMonth(user) 
+                                      ? (isDark ? Colors.green.shade900 : Colors.green.shade50) 
+                                      : (isDark ? Colors.red.shade900 : Colors.red.shade50),
+                                    child: Icon(
+                                      Icons.payments, 
+                                      color: _hasUserPaidForSelectedMonth(user) 
+                                        ? (isDark ? Colors.green.shade300 : Colors.green) 
+                                        : (isDark ? Colors.red.shade300 : Colors.red), 
+                                      size: 26
+                                    ),
                                   ),
                                   const SizedBox(width: 14),
                                   Expanded(
@@ -992,13 +1300,29 @@ class _BillingScreenState extends State<BillingScreen> {
                                       children: [
                                         Text(
                                           user['username'] ?? '-',
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold, 
+                                            fontSize: 16,
+                                            color: isDark ? Colors.white : Colors.black87,
+                                          ),
                                         ),
                                         if (user['profile'] != null)
-                                          Text('Profile: ${user['profile']}', style: const TextStyle(fontSize: 13, color: Colors.black54)),
+                                          Text(
+                                            'Profile: ${user['profile']}', 
+                                            style: TextStyle(
+                                              fontSize: 13, 
+                                              color: isDark ? Colors.white70 : Colors.black54
+                                            )
+                                          ),
                                         if (user['nominal'] != null)
-                                          Text('Tagihan: Rp ${currencyFormat.format(double.tryParse(user['nominal']) ?? 0)}',
-                                            style: const TextStyle(fontSize: 13, color: Colors.deepOrange, fontWeight: FontWeight.w600)),
+                                          Text(
+                                            'Tagihan: Rp ${currencyFormat.format(double.tryParse(user['nominal']) ?? 0)}',
+                                            style: TextStyle(
+                                              fontSize: 13, 
+                                              color: isDark ? Colors.orange.shade300 : Colors.deepOrange, 
+                                              fontWeight: FontWeight.w600
+                                            )
+                                          ),
                                       ],
                                     ),
                                   ),
@@ -1008,7 +1332,9 @@ class _BillingScreenState extends State<BillingScreen> {
                                     children: [
                                       CircleAvatar(
                                         radius: 16,
-                                        backgroundColor: _hasUserPaidForSelectedMonth(user) ? Colors.green : Colors.red,
+                                        backgroundColor: _hasUserPaidForSelectedMonth(user) 
+                                          ? (isDark ? Colors.green.shade700 : Colors.green) 
+                                          : (isDark ? Colors.red.shade700 : Colors.red),
                                         child: Icon(
                                           _hasUserPaidForSelectedMonth(user) ? Icons.check : Icons.close,
                                           color: Colors.white,
@@ -1019,13 +1345,17 @@ class _BillingScreenState extends State<BillingScreen> {
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                         decoration: BoxDecoration(
-                                          color: _hasUserPaidForSelectedMonth(user) ? Colors.green.shade50 : Colors.red.shade50,
+                                          color: _hasUserPaidForSelectedMonth(user) 
+                                            ? (isDark ? Colors.green.shade900 : Colors.green.shade50) 
+                                            : (isDark ? Colors.red.shade900 : Colors.red.shade50),
                                           borderRadius: BorderRadius.circular(8),
                                         ),
                                         child: Text(
                                           _hasUserPaidForSelectedMonth(user) ? 'Lunas' : 'Belum',
                                           style: TextStyle(
-                                            color: _hasUserPaidForSelectedMonth(user) ? Colors.green : Colors.red,
+                                            color: _hasUserPaidForSelectedMonth(user) 
+                                              ? (isDark ? Colors.green.shade300 : Colors.green) 
+                                              : (isDark ? Colors.red.shade300 : Colors.red),
                                             fontWeight: FontWeight.bold,
                                             fontSize: 12,
                                           ),
@@ -1047,10 +1377,10 @@ class _BillingScreenState extends State<BillingScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Text(
                     'Total User: ${users.length}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w500,
                       fontSize: 14,
-                      color: Colors.black87,
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -1064,13 +1394,20 @@ class _BillingScreenState extends State<BillingScreen> {
   }
 
   Widget _buildMethodChip(String method) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     Color color = method.toLowerCase() == 'cash' ? Colors.green : Colors.blue;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: isDark 
+          ? color.withValues(alpha: 0.1) 
+          : color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(
+          color: isDark 
+            ? color.withValues(alpha: 0.3) 
+            : color.withValues(alpha: 0.3)
+        ),
       ),
       child: Text(
         method,
@@ -1084,23 +1421,41 @@ class _BillingScreenState extends State<BillingScreen> {
   }
   
   Future<void> showSuccessDialog(BuildContext context, String message) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.check_circle, color: Colors.green),
-              SizedBox(width: 10),
-              Text('Berhasil', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Icon(Icons.check_circle, color: Colors.green),
+              const SizedBox(width: 10),
+              Text(
+                'Berhasil', 
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black87,
+                )
+              ),
             ],
           ),
-          content: Text(message),
+          content: Text(
+            message,
+            style: TextStyle(
+              color: isDark ? Colors.white70 : Colors.black87,
+            ),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
+              child: Text(
+                'OK',
+                style: TextStyle(
+                  color: isDark ? Colors.blue.shade300 : Colors.blue,
+                ),
+              ),
             ),
           ],
         );
@@ -1109,6 +1464,7 @@ class _BillingScreenState extends State<BillingScreen> {
   }
   
   void _showEditPaymentDialog(Map<String, dynamic> payment, Map<String, dynamic> user) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final formKey = GlobalKey<FormState>();
     final amountController = TextEditingController(text: payment['amount']?.toString() ?? '');
     String selectedMethod = payment['method']?.toString() ?? 'Cash';
@@ -1123,8 +1479,15 @@ class _BillingScreenState extends State<BillingScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
+              backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: const Text('Edit Pembayaran', style: TextStyle(fontWeight: FontWeight.bold)),
+              title: Text(
+                'Edit Pembayaran', 
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black87,
+                )
+              ),
               content: Form(
                 key: formKey,
                 child: SingleChildScrollView(
@@ -1133,30 +1496,93 @@ class _BillingScreenState extends State<BillingScreen> {
                     children: [
                       TextFormField(
                         controller: amountController,
+                        style: TextStyle(
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
                         keyboardType: TextInputType.number,
                         inputFormatters: [CurrencyInputFormatter()],
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Nominal (Rp)',
+                          labelStyle: TextStyle(
+                            color: isDark ? Colors.white70 : Colors.black54,
+                          ),
                           prefixText: 'Rp ',
-                          border: OutlineInputBorder(),
+                          prefixStyle: TextStyle(
+                            color: isDark ? Colors.white : Colors.black87,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: isDark ? Colors.blue.shade300 : Colors.blue,
+                            ),
+                          ),
                         ),
                         validator: (v) => v == null || v.isEmpty ? 'Nominal wajib diisi' : null,
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
+                        dropdownColor: isDark ? const Color(0xFF2D2D2D) : Colors.white,
                         value: selectedMethod,
-                        items: const [
-                          DropdownMenuItem(value: 'Cash', child: Text('Cash')),
-                          DropdownMenuItem(value: 'Transfer', child: Text('Transfer')),
+                        items: [
+                          DropdownMenuItem(
+                            value: 'Cash', 
+                            child: Text(
+                              'Cash',
+                              style: TextStyle(
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
+                            )
+                          ),
+                          DropdownMenuItem(
+                            value: 'Transfer', 
+                            child: Text(
+                              'Transfer',
+                              style: TextStyle(
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
+                            )
+                          ),
                         ],
                         onChanged: (v) {
                           setDialogState(() {
                             selectedMethod = v!;
                           });
                         },
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Metode',
-                          border: OutlineInputBorder(),
+                          labelStyle: TextStyle(
+                            color: isDark ? Colors.white70 : Colors.black54,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: isDark ? Colors.blue.shade300 : Colors.blue,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -1175,17 +1601,44 @@ class _BillingScreenState extends State<BillingScreen> {
                           }
                         },
                         child: InputDecorator(
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'Tanggal Pembayaran',
-                            border: OutlineInputBorder(),
+                            labelStyle: TextStyle(
+                              color: isDark ? Colors.white70 : Colors.black54,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: isDark ? Colors.blue.shade300 : Colors.blue,
+                              ),
+                            ),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.calendar_today, size: 18, color: Colors.blueGrey),
+                              Icon(
+                                Icons.calendar_today, 
+                                size: 18, 
+                                color: isDark ? Colors.grey.shade400 : Colors.blueGrey
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(paymentDate),
-                                style: const TextStyle(fontSize: 13, color: Colors.black54),
+                                style: TextStyle(
+                                  fontSize: 13, 
+                                  color: isDark ? Colors.white70 : Colors.black54
+                                ),
                               ),
                             ],
                           ),
@@ -1194,9 +1647,32 @@ class _BillingScreenState extends State<BillingScreen> {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: noteController,
-                        decoration: const InputDecoration(
+                        style: TextStyle(
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                        decoration: InputDecoration(
                           labelText: 'Catatan (opsional)',
-                          border: OutlineInputBorder(),
+                          labelStyle: TextStyle(
+                            color: isDark ? Colors.white70 : Colors.black54,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: isDark ? Colors.blue.shade300 : Colors.blue,
+                            ),
+                          ),
                         ),
                         minLines: 1,
                         maxLines: 3,
@@ -1210,7 +1686,12 @@ class _BillingScreenState extends State<BillingScreen> {
                   onPressed: () {
                     Navigator.of(dialogContext).pop();
                   },
-                  child: const Text('BATAL'),
+                  child: Text(
+                    'BATAL',
+                    style: TextStyle(
+                      color: isDark ? Colors.blue.shade300 : Colors.blue,
+                    ),
+                  ),
                 ),
                 ElevatedButton(
                   onPressed: isSubmitting
@@ -1258,7 +1739,10 @@ class _BillingScreenState extends State<BillingScreen> {
                               Navigator.of(dialogContext).pop();
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Gagal: ${respData['error'] ?? 'Unknown error'}'), backgroundColor: Colors.red),
+                                  SnackBar(
+                                    content: Text('Gagal: ${respData['error'] ?? 'Unknown error'}'), 
+                                    backgroundColor: isDark ? Colors.grey[800] : Colors.red
+                                  ),
                                 );
                               }
                             }
@@ -1266,7 +1750,10 @@ class _BillingScreenState extends State<BillingScreen> {
                             Navigator.of(dialogContext).pop();
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+                                SnackBar(
+                                  content: Text('Error: ${e.toString()}'), 
+                                  backgroundColor: isDark ? Colors.grey[800] : Colors.red
+                                ),
                               );
                             }
                           } finally {
@@ -1291,26 +1778,46 @@ class _BillingScreenState extends State<BillingScreen> {
   }
   
   void _confirmDeletePayment(Map<String, dynamic> payment) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.warning, color: Colors.red),
-              SizedBox(width: 10),
-              Text('Konfirmasi Hapus', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Icon(Icons.warning, color: Colors.red),
+              const SizedBox(width: 10),
+              Text(
+                'Konfirmasi Hapus', 
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black87,
+                )
+              ),
             ],
           ),
-          content: const Text('Apakah Anda yakin ingin menghapus pembayaran ini?'),
+          content: Text(
+            'Apakah Anda yakin ingin menghapus pembayaran ini?',
+            style: TextStyle(
+              color: isDark ? Colors.white70 : Colors.black87,
+            ),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('BATAL'),
+              child: Text(
+                'BATAL',
+                style: TextStyle(
+                  color: isDark ? Colors.blue.shade300 : Colors.blue,
+                ),
+              ),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isDark ? Colors.red.shade700 : Colors.red
+              ),
               onPressed: () async {
                 try {
                   final paymentId = payment['id'];
@@ -1337,7 +1844,10 @@ class _BillingScreenState extends State<BillingScreen> {
                     Navigator.of(dialogContext).pop();
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Gagal: ${respData['error'] ?? 'Unknown error'}'), backgroundColor: Colors.red),
+                        SnackBar(
+                          content: Text('Gagal: ${respData['error'] ?? 'Unknown error'}'), 
+                          backgroundColor: isDark ? Colors.grey[800] : Colors.red
+                        ),
                       );
                     }
                   }
@@ -1345,7 +1855,10 @@ class _BillingScreenState extends State<BillingScreen> {
                   Navigator.of(dialogContext).pop();
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+                      SnackBar(
+                        content: Text('Error: ${e.toString()}'), 
+                        backgroundColor: isDark ? Colors.grey[800] : Colors.red
+                      ),
                     );
                   }
                 }

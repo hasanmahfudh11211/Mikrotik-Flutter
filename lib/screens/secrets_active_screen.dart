@@ -80,8 +80,10 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
   }
 
   void _showFilterDialog() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
+      backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -91,27 +93,81 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Center(
+            Center(
               child: Text('Filter',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold, 
+                    fontSize: 18,
+                    color: isDark ? Colors.white : Colors.black87,
+                  )),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
+              dropdownColor: isDark ? const Color(0xFF2D2D2D) : Colors.white,
               value: _sortOption,
               items: _sortOptions
-                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                  .map((e) => DropdownMenuItem(
+                    value: e, 
+                    child: Text(
+                      e,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    )))
                   .toList(),
               onChanged: (v) => setState(() => _sortOption = v!),
-              decoration: const InputDecoration(labelText: 'Shortlist'),
+              decoration: InputDecoration(
+                labelText: 'Shortlist',
+                labelStyle: TextStyle(
+                  color: isDark ? Colors.white70 : Colors.black54,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: isDark ? Colors.blue.shade300 : Colors.blue,
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
+              dropdownColor: isDark ? const Color(0xFF2D2D2D) : Colors.white,
               value: _statusFilter,
               items: _statusOptions
-                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                  .map((e) => DropdownMenuItem(
+                    value: e, 
+                    child: Text(
+                      e,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    )))
                   .toList(),
               onChanged: (v) => setState(() => _statusFilter = v!),
-              decoration: const InputDecoration(labelText: 'Status Koneksi'),
+              decoration: InputDecoration(
+                labelText: 'Status Koneksi',
+                labelStyle: TextStyle(
+                  color: isDark ? Colors.white70 : Colors.black54,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: isDark ? Colors.blue.shade300 : Colors.blue,
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: 8),
           ],
@@ -121,6 +177,7 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
   }
 
   void _showUserDetail(BuildContext parentContext, Map<String, dynamic> user) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isOnline = user['isOnline'] == true;
     final profile = user['profile-info'] ?? {};
     // Create a timer to update the UI
@@ -146,7 +203,7 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
         expand: false,
           builder: (_, controller) => Container(
             decoration: BoxDecoration(
-              color: Theme.of(parentContext).scaffoldBackgroundColor,
+              color: isDark ? const Color(0xFF1E1E1E) : Theme.of(parentContext).scaffoldBackgroundColor,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
             child: Column(
@@ -156,7 +213,7 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: isDark ? Colors.grey.shade700 : Colors.grey[300],
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -172,12 +229,12 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                             width: 40,
                             height: 40,
                             decoration: BoxDecoration(
-                              color: Colors.blue.shade50,
+                              color: isDark ? Colors.blue.shade900 : Colors.blue.shade50,
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
                               Icons.person,
-                              color: Colors.blue.shade700,
+                              color: isDark ? Colors.blue.shade300 : Colors.blue.shade700,
                             ),
                   ),
                           const SizedBox(width: 12),
@@ -187,15 +244,16 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                       children: [
                                 Text(
                                   user['name'] ?? '-',
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
+                                    color: isDark ? Colors.white : Colors.black87,
                                   ),
                                 ),
                                 Text(
                                   user['profile'] ?? '-',
                                   style: TextStyle(
-                                    color: Colors.grey[600],
+                                    color: isDark ? Colors.white70 : Colors.grey[600],
                                     fontSize: 14,
                                   ),
                             ),
@@ -205,7 +263,9 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: isOnline ? Colors.green.shade50 : Colors.red.shade50,
+                              color: isOnline 
+                                ? (isDark ? Colors.green.shade900 : Colors.green.shade50) 
+                                : (isDark ? Colors.red.shade900 : Colors.red.shade50),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Row(
@@ -224,7 +284,9 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                                   isOnline ? 'Online' : 'Offline',
                                 style: TextStyle(
                                     fontSize: 12,
-                                    color: isOnline ? Colors.green : Colors.red,
+                                    color: isOnline 
+                                      ? (isDark ? Colors.green.shade300 : Colors.green) 
+                                      : (isDark ? Colors.red.shade300 : Colors.red),
                                     fontWeight: FontWeight.w500,
                                   ),
                           ),
@@ -237,14 +299,14 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                       Container(
                         decoration: BoxDecoration(
                           border: Border.all(
-                            color: Theme.of(parentContext).brightness == Brightness.dark 
-                              ? Colors.grey[800]!.withAlpha(128) 
+                            color: isDark 
+                              ? Colors.grey[700]! 
                               : Colors.grey[300]!,
                             width: 1,
                           ),
                           borderRadius: BorderRadius.circular(12),
-                          color: Theme.of(parentContext).brightness == Brightness.dark
-                              ? Colors.grey[900]!.withAlpha(77)
+                          color: isDark
+                              ? const Color(0xFF2D2D2D)
                               : Colors.grey[50]!,
                         ),
                   child: Column(
@@ -252,7 +314,6 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                             _buildDetailItem(Icons.person_outline, 'Name', user['name'] ?? '-', canCopy: true),
                             _buildDivider(),
                             _buildDetailItem(Icons.lock_outline, 'Password', user['password'] ?? '-', isPassword: true),
-                            _buildDivider(),
                             _buildDetailItem(Icons.settings_outlined, 'Service', user['service'] ?? '-'),
                             _buildDivider(),
                             _buildDetailItem(Icons.wifi_outlined, 'IP', user['address'] ?? '-', canCopy: true),
@@ -286,7 +347,7 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.orange.shade50,
+                          color: isDark ? Colors.orange.shade900 : Colors.orange.shade50,
                           borderRadius: BorderRadius.circular(8),
                         ),
                     child: Column(
@@ -294,12 +355,12 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                       children: [
                             Row(
                               children: [
-                                Icon(Icons.info_outline, color: Colors.orange[700], size: 20),
+                                Icon(Icons.info_outline, color: isDark ? Colors.orange.shade300 : Colors.orange[700], size: 20),
                                 const SizedBox(width: 8),
                                 Text(
                                   'PPP Profile',
                                   style: TextStyle(
-                                    color: Colors.orange[700],
+                                    color: isDark ? Colors.orange.shade300 : Colors.orange[700],
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -308,23 +369,38 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                         const SizedBox(height: 8),
                         Text(
                               'Rate Limit: ${profile['rate-limit'] ?? '-'}',
-                              style: const TextStyle(fontSize: 13),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isDark ? Colors.white70 : Colors.black87,
+                              ),
                             ),
                         Text(
                               'DNS Server: ${profile['dns-server'] ?? '-'}',
-                              style: const TextStyle(fontSize: 13),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isDark ? Colors.white70 : Colors.black87,
+                              ),
                             ),
                         Text(
                               'Local Address: ${profile['local-address'] ?? '-'}',
-                              style: const TextStyle(fontSize: 13),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isDark ? Colors.white70 : Colors.black87,
+                              ),
                             ),
                         Text(
                               'Remote Address: ${profile['remote-address'] ?? '-'}',
-                              style: const TextStyle(fontSize: 13),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isDark ? Colors.white70 : Colors.black87,
+                              ),
                             ),
                             if (profile['parent-queue'] != null) Text(
                               'Parent Queue: ${profile['parent-queue']}',
-                              style: const TextStyle(fontSize: 13),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isDark ? Colors.white70 : Colors.black87,
+                              ),
                             ),
                       ],
                     ),
@@ -347,10 +423,18 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                                   ),
                                 );
                               },
-                              icon: const Icon(Icons.edit),
-                              label: const Text('Edit'),
+                              icon: Icon(
+                                Icons.edit,
+                                color: isDark ? Colors.white : Colors.white,
+                              ),
+                              label: Text(
+                                'Edit',
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : Colors.white,
+                                ),
+                              ),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
+                                backgroundColor: isDark ? Colors.blue.shade700 : Colors.blue,
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
@@ -366,10 +450,18 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                                 Navigator.pop(bottomSheetContext);
                                 _showDeleteConfirmation(parentContext, user);
                               },
-                              icon: const Icon(Icons.delete),
-                              label: const Text('Delete'),
+                              icon: Icon(
+                                Icons.delete,
+                                color: isDark ? Colors.white : Colors.white,
+                              ),
+                              label: Text(
+                                'Delete',
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : Colors.white,
+                                ),
+                              ),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
+                                backgroundColor: isDark ? Colors.red.shade700 : Colors.red,
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(vertical: 12),
                                 shape: RoundedRectangleBorder(
@@ -396,8 +488,8 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
 
   Widget _buildDetailItem(IconData icon, String label, String value, {bool isPassword = false, bool canCopy = false}) {
     final ValueNotifier<bool> passwordVisible = ValueNotifier<bool>(false);
-    final Color themeColor = Theme.of(context).brightness == Brightness.dark ? Colors.blue[300]! : Colors.blue[700]!;
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final themeColor = isDarkMode ? Colors.blue.shade300 : Colors.blue.shade700;
     
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
@@ -419,7 +511,7 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                   label,
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.grey[600],
+                    color: isDarkMode ? Colors.grey.shade400 : Colors.grey[600],
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -469,7 +561,13 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                           Clipboard.setData(ClipboardData(text: value));
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('$label copied to clipboard'),
+                              content: Text(
+                                '$label copied to clipboard',
+                                style: TextStyle(
+                                  color: isDarkMode ? Colors.white : Colors.black87,
+                                ),
+                              ),
+                              backgroundColor: isDarkMode ? Colors.grey[800] : Colors.grey[200],
                               duration: const Duration(seconds: 2),
                             ),
                           );
@@ -494,39 +592,43 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
   }
 
   Widget _buildDivider() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Divider(
       height: 1,
       thickness: 1,
-      color: Theme.of(context).brightness == Brightness.dark 
-        ? Colors.grey[800]!.withAlpha(128) 
+      color: isDarkMode 
+        ? Colors.grey[700] 
         : Colors.grey[200],
     );
   }
 
   void _showDeleteConfirmation(BuildContext parentContext, Map<String, dynamic> user) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: parentContext,
       builder: (dialogContext) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.red.shade50,
+                color: isDark ? Colors.red.shade900 : Colors.red.shade50,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.warning_rounded,
-                color: Colors.red[700],
+                color: isDark ? Colors.red.shade300 : Colors.red[700],
                 size: 24,
               ),
             ),
             const SizedBox(width: 12),
-            const Text(
+            Text(
               'Confirm Delete',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black87,
               ),
             ),
           ],
@@ -537,14 +639,17 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
           children: [
             Text(
               'Are you sure you want to delete user "${user['name']}"?',
-              style: const TextStyle(fontSize: 16),
+              style: TextStyle(
+                fontSize: 16,
+                color: isDark ? Colors.white70 : Colors.black87,
+              ),
             ),
                         const SizedBox(height: 8),
             Text(
               'This action cannot be undone.',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey[600],
+                color: isDark ? Colors.grey.shade400 : Colors.grey[600],
               ),
             ),
           ],
@@ -555,7 +660,7 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
             child: Text(
               'CANCEL',
               style: TextStyle(
-                color: Colors.grey[600],
+                color: isDark ? Colors.blue.shade300 : Colors.grey[600],
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -575,8 +680,8 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                         children: [
                           Container(
                             padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.grey[800] : Colors.white,
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
@@ -586,10 +691,15 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          Text('User ${user['name']} berhasil dihapus'),
+                          Text(
+                            'User ${user['name']} berhasil dihapus',
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                          ),
                         ],
                       ),
-                      backgroundColor: Colors.green,
+                      backgroundColor: isDark ? Colors.grey[900] : Colors.green,
                       duration: const Duration(seconds: 3),
                       behavior: SnackBarBehavior.fixed,
                     ),
@@ -606,8 +716,8 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                         children: [
                           Container(
                             padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.grey[800] : Colors.white,
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
@@ -617,10 +727,15 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          Text('Gagal menghapus user ${user['name']}'),
+                          Text(
+                            'Gagal menghapus user ${user['name']}',
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                          ),
                         ],
                       ),
-                      backgroundColor: Colors.red,
+                      backgroundColor: isDark ? Colors.grey[900] : Colors.red,
                       duration: const Duration(seconds: 3),
                       behavior: SnackBarBehavior.fixed,
                     ),
@@ -629,7 +744,7 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: isDark ? Colors.red.shade700 : Colors.red,
               foregroundColor: Colors.white,
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -645,33 +760,41 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
   }
 
   Widget _buildSearchBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Row(
         children: [
           Expanded(
             child: Card(
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
               elevation: 4,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDark ? const Color(0xFF2D2D2D) : Colors.white,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   children: [
                     const SizedBox(width: 12),
-                    Icon(Icons.search, color: Colors.grey.shade600),
+                    Icon(Icons.search, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
                           const SizedBox(width: 8),
                     Expanded(
                       child: TextField(
+                        style: TextStyle(
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
                         controller: _searchController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'Cari username...',
+                          hintStyle: TextStyle(
+                            color: isDark ? Colors.grey.shade600 : Colors.grey.shade500,
+                          ),
                           border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
                         ),
                         onChanged: (value) {
                           setState(() {
@@ -682,7 +805,10 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                     ),
                     if (_searchQuery.isNotEmpty)
                       IconButton(
-                        icon: const Icon(Icons.clear),
+                        icon: Icon(
+                          Icons.clear,
+                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                        ),
                         onPressed: () {
                           _searchController.clear();
                           setState(() {
@@ -697,21 +823,22 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
           ),
                           const SizedBox(width: 8),
           Card(
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
             elevation: 4,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: isDark ? const Color(0xFF2D2D2D) : Colors.white,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: IconButton(
                 icon: Icon(
                   Icons.filter_list,
                   color: _statusFilter != 'Semua' || _sortOption != 'Uptime (Shortest)'
-                      ? Colors.blue.shade800
-                      : Colors.grey.shade600,
+                      ? (isDark ? Colors.blue.shade300 : Colors.blue.shade800)
+                      : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
                 ),
                 onPressed: _showFilterDialog,
                 tooltip: 'Filter',
@@ -725,6 +852,7 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GradientContainer(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -764,7 +892,14 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (provider.error != null) {
-            return Center(child: Text('Error: ${provider.error}'));
+            return Center(
+              child: Text(
+                'Error: ${provider.error}',
+                style: TextStyle(
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+            );
           }
 
           // Fetch interface jika belum
@@ -898,18 +1033,20 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                                   margin: const EdgeInsets.only(bottom: 6),
                                   decoration: BoxDecoration(
                                     color: isOnline
-                                        ? Colors.white
-                                        : Colors.grey[100],
+                                        ? (isDark ? const Color(0xFF1E1E1E) : Colors.white)
+                                        : (isDark ? Colors.grey[800] : Colors.grey[100]),
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
                                       color: isOnline
-                                          ? Colors.blue.shade200
-                                          : Colors.red.shade200,
+                                          ? (isDark ? Colors.blue.shade700 : Colors.blue.shade200)
+                                          : (isDark ? Colors.red.shade700 : Colors.red.shade200),
                                       width: 1.0,
                                     ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.04),
+                                        color: isDark 
+                                          ? Colors.black.withValues(alpha: 0.4)
+                                          : Colors.black.withValues(alpha: 0.04),
                                         blurRadius: 2,
                                         offset: const Offset(0, 1),
                                       ),
@@ -923,13 +1060,13 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                                       children: [
                                         CircleAvatar(
                                           backgroundColor: isOnline
-                                              ? Colors.blue[50]
-                                              : Colors.red[50],
+                                              ? (isDark ? Colors.blue.shade900 : Colors.blue[50])
+                                              : (isDark ? Colors.red.shade900 : Colors.red[50]),
                                           radius: 14,
                                           child: Icon(Icons.person,
                                               color: isOnline
-                                                  ? Colors.blue[700]
-                                                  : Colors.red[400],
+                                                  ? (isDark ? Colors.blue.shade300 : Colors.blue[700])
+                                                  : (isDark ? Colors.red.shade300 : Colors.red[400]),
                                               size: 16),
                                         ),
                                         Positioned(
@@ -937,7 +1074,7 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                                           right: 0,
                                           child: CircleAvatar(
                                             radius: 5,
-                                            backgroundColor: Colors.white,
+                                            backgroundColor: isDark ? Colors.grey[900] : Colors.white,
                                             child: Icon(
                                               isOnline
                                                   ? Icons.circle
@@ -958,8 +1095,8 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                                         fontSize: 15,
                                         letterSpacing: 0.1,
                                         color: isOnline
-                                            ? Colors.blue[800]
-                                            : Colors.red[700],
+                                            ? (isDark ? Colors.blue.shade300 : Colors.blue[800])
+                                            : (isDark ? Colors.red.shade300 : Colors.red[700]),
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                       maxLines: 1,
@@ -972,7 +1109,7 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                                               Text(user['profile'] ?? '-',
                                                   style: TextStyle(
                                                       fontSize: 12,
-                                                      color: Colors.blue[400]),
+                                                      color: isDark ? Colors.blue.shade400 : Colors.blue[400]),
                                                   overflow:
                                                       TextOverflow.ellipsis,
                                                   maxLines: 1),
@@ -981,15 +1118,14 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                                                 children: [
                                                   Icon(Icons.location_on,
                                                       size: 11,
-                                                      color: Colors.blue[300]),
+                                                      color: isDark ? Colors.blue.shade500 : Colors.blue[300]),
                                                   const SizedBox(width: 2),
                                                   Flexible(
                                                     child: Text(
                                                         user['address'] ?? '-',
                                                         style: TextStyle(
                                                             fontSize: 11,
-                                                            color: Colors
-                                                                .blue[400]),
+                                                            color: isDark ? Colors.blue.shade400 : Colors.blue[400]),
                                                         overflow: TextOverflow
                                                             .ellipsis,
                                                         maxLines: 1),
@@ -997,7 +1133,7 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                                                   const SizedBox(width: 6),
                                                   Icon(Icons.access_time,
                                                       size: 11,
-                                                      color: Colors.blue[300]),
+                                                      color: isDark ? Colors.blue.shade500 : Colors.blue[300]),
                                                   const SizedBox(width: 2),
                                                   Flexible(
                                                     child: Text(
@@ -1005,8 +1141,7 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                                                             user['uptime']),
                                                         style: TextStyle(
                                                             fontSize: 11,
-                                                            color: Colors
-                                                                .blue[400]),
+                                                            color: isDark ? Colors.blue.shade400 : Colors.blue[400]),
                                                         overflow: TextOverflow
                                                             .ellipsis,
                                                         maxLines: 1),
@@ -1022,7 +1157,7 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                                               Text(user['profile'] ?? '-',
                                                   style: TextStyle(
                                                       fontSize: 12,
-                                                      color: Colors.red[400]),
+                                                      color: isDark ? Colors.red.shade400 : Colors.red[400]),
                                                   overflow:
                                                       TextOverflow.ellipsis,
                                                   maxLines: 1),
@@ -1034,7 +1169,7 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                                                         formatLastLogout(user['last-logged-out'] ?? user['last_logout']),
                                                     style: TextStyle(
                                                         fontSize: 11,
-                                                        color: Colors.red[300]),
+                                                        color: isDark ? Colors.red.shade300 : Colors.red[300]),
                                                     overflow:
                                                         TextOverflow.ellipsis,
                                                     maxLines: 1),
@@ -1069,9 +1204,9 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                                                   children: [
                                                     Text(
                                                       _formatBytes(rx),
-                                                      style: const TextStyle(
+                                                      style: TextStyle(
                                                         fontSize: 16,
-                                                        color: Colors.blue,
+                                                        color: isDark ? Colors.blue.shade300 : Colors.blue,
                                                         fontWeight:
                                                             FontWeight.w700,
                                                       ),
@@ -1083,9 +1218,9 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                                                     ),
                                                     Text(
                                                       _formatBytes(tx),
-                                                      style: const TextStyle(
+                                                      style: TextStyle(
                                                         fontSize: 16,
-                                                        color: Colors.green,
+                                                        color: isDark ? Colors.green.shade300 : Colors.green,
                                                         fontWeight:
                                                             FontWeight.w700,
                                                       ),
@@ -1113,29 +1248,30 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(Icons.people,
-                                    color: Colors.black54, size: 18),
+                                Icon(Icons.people,
+                                    color: isDark ? Colors.white70 : Colors.black54, size: 18),
                                 const SizedBox(width: 4),
                                 Text('$filteredTotal total',
-                                    style: const TextStyle(
-                                        color: Colors.black87, fontSize: 14)),
+                                    style: TextStyle(
+                                        color: isDark ? Colors.white : Colors.black87, fontSize: 14)),
                                 const Text(' | ',
                                     style: TextStyle(fontSize: 14)),
-                                const Icon(Icons.check_circle,
-                                    color: Colors.green, size: 18),
+                                Icon(Icons.check_circle,
+                                    color: isDark ? Colors.green.shade300 : Colors.green, size: 18),
                                 const SizedBox(width: 4),
                                 Text('$filteredActive active',
-                                    style: const TextStyle(
-                                        color: Colors.green,
+                                    style: TextStyle(
+                                        color: isDark ? Colors.green.shade300 : Colors.green,
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold)),
                                 const Text(' | ',
                                     style: TextStyle(fontSize: 14)),
-                                const Icon(Icons.cancel, color: Colors.red, size: 18),
+                                Icon(Icons.cancel, 
+                                    color: isDark ? Colors.red.shade300 : Colors.red, size: 18),
                                 const SizedBox(width: 4),
                                 Text('$filteredOffline offline',
-                                    style: const TextStyle(
-                                        color: Colors.red,
+                                    style: TextStyle(
+                                        color: isDark ? Colors.red.shade300 : Colors.red,
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold)),
                               ],

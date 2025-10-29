@@ -23,7 +23,7 @@ class RouterImageService {
     
     if (boardName == null || boardName.isEmpty) {
       print('RouterImageService: Board name is null or empty');
-      return ['https://cdn.mikrotik.com/web-assets/rb_images/1405_m.png']; // hEX default
+      return ['assets/mikrotik_product_images/default.png']; // Local default image
     }
 
     // Clean the board name (remove extra spaces, normalize)
@@ -55,13 +55,13 @@ class RouterImageService {
 
     print('RouterImageService: No match found for "$cleanBoardName", using default');
     // Return default if no match found
-    return ['https://cdn.mikrotik.com/web-assets/rb_images/1405_m.png']; // hEX default
+    return ['assets/mikrotik_product_images/default.png']; // Local default image
   }
 
   /// Get primary router image URL (first URL in the list)
   static Future<String> getRouterImageUrl(String? boardName) async {
     final urls = await getRouterImageUrls(boardName);
-    return urls.isNotEmpty ? urls[0] : 'https://cdn.mikrotik.com/web-assets/rb_images/1405_m.png';
+    return urls.isNotEmpty ? urls[0] : 'assets/mikrotik_product_images/default.png'; // Local default image
   }
 
   /// Get router display name (clean version)

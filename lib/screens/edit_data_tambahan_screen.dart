@@ -129,10 +129,12 @@ class _EditDataTambahanScreenState extends State<EditDataTambahanScreen> {
   Future<void> _saveChanges() async {
     if (!_formKey.currentState!.validate()) return;
     // Tampilkan dialog konfirmasi sebelum simpan
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final konfirmasi = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (context) => Dialog(
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
@@ -143,25 +145,32 @@ class _EditDataTambahanScreenState extends State<EditDataTambahanScreen> {
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade100,
+                  color: isDark ? Colors.blue.shade900 : Colors.blue.shade100,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.help_outline, color: Colors.blue, size: 36),
+                child: Icon(
+                  Icons.help_outline, 
+                  color: isDark ? Colors.blue.shade300 : Colors.blue, 
+                  size: 36
+                ),
               ),
               const SizedBox(height: 18),
-              const Text(
+              Text(
                 'Konfirmasi',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blue,
+                  color: isDark ? Colors.white : Colors.blue,
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'Apakah data sudah benar?',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.black87),
+                style: TextStyle(
+                  fontSize: 16, 
+                  color: isDark ? Colors.white70 : Colors.black87
+                ),
               ),
               const SizedBox(height: 28),
               Row(
@@ -170,14 +179,23 @@ class _EditDataTambahanScreenState extends State<EditDataTambahanScreen> {
                     child: OutlinedButton(
                       onPressed: () => Navigator.of(context).pop(false),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.grey[700],
-                        side: BorderSide(color: Colors.grey.shade400),
+                        foregroundColor: isDark ? Colors.white70 : Colors.grey[700],
+                        side: BorderSide(
+                          color: isDark ? Colors.grey.shade700 : Colors.grey.shade400
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text('BATAL', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                      child: Text(
+                        'BATAL', 
+                        style: TextStyle(
+                          fontSize: 16, 
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white : Colors.grey[700],
+                        )
+                      ),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -185,14 +203,21 @@ class _EditDataTambahanScreenState extends State<EditDataTambahanScreen> {
                     child: ElevatedButton(
                       onPressed: () => Navigator.of(context).pop(true),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue.shade800,
+                        backgroundColor: isDark ? Colors.blue.shade700 : Colors.blue.shade800,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text('SIMPAN', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                      child: const Text(
+                        'SIMPAN', 
+                        style: TextStyle(
+                          fontSize: 16, 
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        )
+                      ),
                     ),
                   ),
                 ],
@@ -249,6 +274,7 @@ class _EditDataTambahanScreenState extends State<EditDataTambahanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GradientContainer(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -274,6 +300,7 @@ class _EditDataTambahanScreenState extends State<EditDataTambahanScreen> {
               children: [
                 // Info Card
                 Card(
+                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -284,9 +311,10 @@ class _EditDataTambahanScreenState extends State<EditDataTambahanScreen> {
                       children: [
                         Text(
                           'Username: ${widget.username}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : Colors.black87,
                           ),
                         ),
                       ],
@@ -297,6 +325,7 @@ class _EditDataTambahanScreenState extends State<EditDataTambahanScreen> {
 
                 // Form Fields
                 Card(
+                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -308,11 +337,35 @@ class _EditDataTambahanScreenState extends State<EditDataTambahanScreen> {
                         // WhatsApp Field
                         TextFormField(
                           controller: _waController,
+                          style: TextStyle(
+                            color: isDark ? Colors.white : Colors.black87,
+                          ),
                           decoration: InputDecoration(
                             labelText: 'Nomor WhatsApp',
-                            prefixIcon: const Icon(Icons.phone),
+                            labelStyle: TextStyle(
+                              color: isDark ? Colors.white70 : Colors.black54,
+                            ),
+                            prefixIcon: Icon(
+                              Icons.phone,
+                              color: isDark ? Colors.blue.shade300 : Colors.blue,
+                            ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: isDark ? Colors.blue.shade300 : Colors.blue,
+                              ),
                             ),
                           ),
                           keyboardType: TextInputType.phone,
@@ -322,23 +375,47 @@ class _EditDataTambahanScreenState extends State<EditDataTambahanScreen> {
                         // Maps Field
                         TextFormField(
                           controller: _mapsController,
+                          style: TextStyle(
+                            color: isDark ? Colors.white : Colors.black87,
+                          ),
                           decoration: InputDecoration(
                             labelText: 'Link Google Maps',
-                            prefixIcon: const Icon(Icons.location_on),
+                            labelStyle: TextStyle(
+                              color: isDark ? Colors.white70 : Colors.black54,
+                            ),
+                            prefixIcon: Icon(
+                              Icons.location_on,
+                              color: isDark ? Colors.blue.shade300 : Colors.blue,
+                            ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: isDark ? Colors.blue.shade300 : Colors.blue,
+                              ),
                             ),
                           ),
                         ),
                         const SizedBox(height: 16),
 
                         // ODP Dropdown
-                        const Text(
+                        Text(
                           'Hubungkan ke ODP',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            color: isDark ? Colors.white : Colors.black87,
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -349,19 +426,44 @@ class _EditDataTambahanScreenState extends State<EditDataTambahanScreen> {
                                 isExpanded: true,
                                 decoration: InputDecoration(
                                   filled: true,
-                                  fillColor: Colors.white.withOpacity(0.9),
+                                  fillColor: isDark ? const Color(0xFF2D2D2D) : Colors.white.withValues(alpha: 0.9),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide.none,
+                                    borderSide: BorderSide(
+                                      color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                                    ),
                                   ),
-                                  prefixIcon: const Icon(Icons.device_hub),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: isDark ? Colors.blue.shade300 : Colors.blue,
+                                    ),
+                                  ),
+                                  prefixIcon: Icon(
+                                    Icons.device_hub,
+                                    color: isDark ? Colors.blue.shade300 : Colors.blue,
+                                  ),
                                   hintText: 'Pilih ODP',
+                                  hintStyle: TextStyle(
+                                    color: isDark ? Colors.white70 : Colors.black54,
+                                  ),
                                 ),
                                 items: _odpList.map((odp) {
                                   return DropdownMenuItem<int>(
                                     // Pastikan value adalah integer
                                     value: int.parse(odp['id'].toString()),
-                                    child: Text(odp['name']),
+                                    child: Text(
+                                      odp['name'],
+                                      style: TextStyle(
+                                        color: isDark ? Colors.white : Colors.black87,
+                                      ),
+                                    ),
                                   );
                                 }).toList(),
                                 onChanged: (value) {
@@ -374,11 +476,12 @@ class _EditDataTambahanScreenState extends State<EditDataTambahanScreen> {
                         const SizedBox(height: 16),
 
                         // Image Picker
-                        const Text(
+                        Text(
                           'Foto Lokasi',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : Colors.black87,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -407,11 +510,11 @@ class _EditDataTambahanScreenState extends State<EditDataTambahanScreen> {
                                       return Container(
                                         height: 200,
                                         width: double.infinity,
-                                        color: Colors.grey[300],
-                                        child: const Icon(
+                                        color: isDark ? Colors.grey.shade800 : Colors.grey[300],
+                                        child: Icon(
                                           Icons.error_outline,
                                           size: 50,
-                                          color: Colors.grey,
+                                          color: isDark ? Colors.grey.shade400 : Colors.grey,
                                         ),
                                       );
                                     },
@@ -421,11 +524,20 @@ class _EditDataTambahanScreenState extends State<EditDataTambahanScreen> {
                               const SizedBox(height: 16),
                               ElevatedButton.icon(
                                 onPressed: _isLoading ? null : _pickImage,
-                                icon: const Icon(Icons.photo_camera),
-                                label: Text(_pickedImage != null || (_currentImageUrl != null && _currentImageUrl!.isNotEmpty)
-                                    ? 'Ganti Foto'
-                                    : 'Pilih Foto'),
+                                icon: Icon(
+                                  Icons.photo_camera,
+                                  color: isDark ? Colors.white : Colors.white,
+                                ),
+                                label: Text(
+                                  _pickedImage != null || (_currentImageUrl != null && _currentImageUrl!.isNotEmpty)
+                                      ? 'Ganti Foto'
+                                      : 'Pilih Foto',
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : Colors.white,
+                                  ),
+                                ),
                                 style: ElevatedButton.styleFrom(
+                                  backgroundColor: isDark ? Colors.blue.shade700 : Colors.blue.shade700,
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 24,
                                     vertical: 12,
@@ -456,13 +568,19 @@ class _EditDataTambahanScreenState extends State<EditDataTambahanScreen> {
                             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
-                      : const Icon(Icons.save, color: Colors.white),
+                      : Icon(
+                          Icons.save,
+                          color: isDark ? Colors.white : Colors.white,
+                        ),
                   label: Text(
                     _isLoading ? 'MENYIMPAN...' : 'SIMPAN PERUBAHAN',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      color: isDark ? Colors.white : Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue.shade700,
+                    backgroundColor: isDark ? Colors.blue.shade700 : Colors.blue.shade700,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -475,7 +593,10 @@ class _EditDataTambahanScreenState extends State<EditDataTambahanScreen> {
                     padding: const EdgeInsets.only(top: 16),
                     child: Text(
                       _error!,
-                      style: const TextStyle(color: Colors.red),
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 16,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ),

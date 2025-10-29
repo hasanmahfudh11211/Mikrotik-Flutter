@@ -16,7 +16,6 @@ class SystemResourceScreen extends StatefulWidget {
 
 class _SystemResourceScreenState extends State<SystemResourceScreen> {
   Timer? _timer;
-  String? _cachedImageUrl;
 
   @override
   void initState() {
@@ -58,7 +57,7 @@ class _SystemResourceScreenState extends State<SystemResourceScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isDark ? Colors.blue.withOpacity(0.1) : Colors.blue.withOpacity(0.1),
+                color: isDark ? Colors.blue.withValues(alpha: 0.1) : Colors.blue.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -109,7 +108,7 @@ class _SystemResourceScreenState extends State<SystemResourceScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -124,39 +123,18 @@ class _SystemResourceScreenState extends State<SystemResourceScreen> {
               width: double.infinity,
               height: double.infinity,
               color: isDark ? Colors.grey[900] : Colors.grey[100],
-              child: _cachedImageUrl != null 
-                ? _buildCachedImage(_cachedImageUrl!, isDark)
-                : FutureBuilder<String>(
-                  future: RouterImageServiceSimple.getRouterImageUrl(boardName),
-                  builder: (context, snapshot) {
-                    print('SystemResourceScreen: FutureBuilder snapshot state: ${snapshot.connectionState}');
-                    print('SystemResourceScreen: FutureBuilder hasData: ${snapshot.hasData}');
-                    print('SystemResourceScreen: FutureBuilder data: ${snapshot.data}');
-                    print('SystemResourceScreen: FutureBuilder error: ${snapshot.error}');
-                  
+              child: FutureBuilder<String>(
+                future: RouterImageServiceSimple.getRouterImageUrl(boardName),
+                builder: (context, snapshot) {
+                  print('SystemResourceScreen: FutureBuilder snapshot state: ${snapshot.connectionState}');
+                  print('SystemResourceScreen: FutureBuilder hasData: ${snapshot.hasData}');
+                  print('SystemResourceScreen: FutureBuilder data: ${snapshot.data}');
+                  print('SystemResourceScreen: FutureBuilder error: ${snapshot.error}');
+                
                   if (snapshot.hasError) {
                     print('SystemResourceScreen: Error loading router image: ${snapshot.error}');
-                    return Container(
-                      color: isDark ? Colors.grey[800] : Colors.grey[200],
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.error,
-                            size: 40,
-                            color: Colors.red,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Error loading image',
-                            style: TextStyle(
-                              color: Colors.red,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
+                    // Show default.png when there's an error
+                    return _buildCachedImage('assets/mikrotik_product_images/default.png', isDark, isAsset: true);
                   }
                   
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -184,23 +162,11 @@ class _SystemResourceScreenState extends State<SystemResourceScreen> {
                   
                   if (snapshot.hasData && snapshot.data!.isNotEmpty) {
                     print('SystemResourceScreen: Loading image with URL: ${snapshot.data}');
-                    // Cache the URL to prevent infinite refresh
-                    if (_cachedImageUrl != snapshot.data) {
-                      setState(() {
-                        _cachedImageUrl = snapshot.data;
-                      });
-                    }
                     return _buildCachedImage(snapshot.data!, isDark);
                   } else {
-                    print('SystemResourceScreen: No data or empty data, showing default icon');
-                    return Container(
-                      color: isDark ? Colors.grey[800] : Colors.grey[200],
-                      child: Icon(
-                        Icons.router,
-                        size: 80,
-                        color: isDark ? Colors.grey[400] : Colors.grey[600],
-                      ),
-                    );
+                    print('SystemResourceScreen: No data or empty data, showing default image');
+                    // Show default.png when no data is available
+                    return _buildCachedImage('assets/mikrotik_product_images/default.png', isDark, isAsset: true);
                   }
                 },
               ),
@@ -218,7 +184,7 @@ class _SystemResourceScreenState extends State<SystemResourceScreen> {
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.transparent,
-                      Colors.black.withOpacity(0.8),
+                      Colors.black.withValues(alpha: 0.8),
                     ],
                   ),
                 ),
@@ -239,7 +205,43 @@ class _SystemResourceScreenState extends State<SystemResourceScreen> {
     );
   }
 
-  Widget _buildCachedImage(String imageUrl, bool isDark) {
+  Widget _buildCachedImage(String imageUrl, bool isDark, {bool isAsset = false}) {
+    if (isAsset) {
+      // Handle asset images
+      return Image.asset(
+        imageUrl,
+        fit: BoxFit.contain,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (context, error, stackTrace) {
+          print('SystemResourceScreen: Error loading asset image: $error');
+          // Fallback to icon if asset also fails
+          return Container(
+            color: isDark ? Colors.grey[800] : Colors.grey[200],
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.router,
+                  size: 80,
+                  color: isDark ? Colors.grey[400] : Colors.grey[600],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Image not available',
+                  style: TextStyle(
+                    color: isDark ? Colors.white70 : Colors.black54,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
+    
+    // Handle network images
     return Image.network(
       imageUrl,
       fit: BoxFit.contain,
@@ -269,27 +271,8 @@ class _SystemResourceScreenState extends State<SystemResourceScreen> {
       },
       errorBuilder: (context, error, stackTrace) {
         print('SystemResourceScreen: Error loading cached image: $error');
-        return Container(
-          color: isDark ? Colors.grey[800] : Colors.grey[200],
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error,
-                size: 40,
-                color: Colors.red,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Failed to load image',
-                style: TextStyle(
-                  color: Colors.red,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        );
+        // Show default.png when network image fails
+        return _buildCachedImage('assets/mikrotik_product_images/default.png', isDark, isAsset: true);
       },
     );
   }
@@ -311,7 +294,7 @@ class _SystemResourceScreenState extends State<SystemResourceScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isDark ? Colors.blue.withOpacity(0.1) : Colors.blue.withOpacity(0.1),
+                    color: isDark ? Colors.blue.withValues(alpha: 0.1) : Colors.blue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -398,7 +381,7 @@ class _SystemResourceScreenState extends State<SystemResourceScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? Colors.black26 : Colors.blue.withOpacity(0.05),
+        color: isDark ? Colors.black26 : Colors.blue.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -479,7 +462,7 @@ class _SystemResourceScreenState extends State<SystemResourceScreen> {
                     style: TextStyle(
                     fontSize: 18,
                         fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: isDark ? Colors.white : Colors.black87,
                     letterSpacing: 0.5,
                   ),
               ),
