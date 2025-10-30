@@ -12,6 +12,8 @@ import 'dart:io';
 import 'package:open_file/open_file.dart';
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:android_intent_plus/flag.dart';
+import 'package:provider/provider.dart';
+import '../main.dart';
 
 class PaymentSummaryScreen extends StatefulWidget {
   const PaymentSummaryScreen({super.key});
@@ -265,6 +267,9 @@ class _PaymentSummaryScreenState extends State<PaymentSummaryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Check if dark mode is enabled
+    final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
+    
     return GradientContainer(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -272,7 +277,7 @@ class _PaymentSummaryScreenState extends State<PaymentSummaryScreen> {
           title: const Text('Ringkasan Pembayaran'),
           backgroundColor: Colors.transparent,
           elevation: 0,
-          iconTheme: const IconThemeData(color: Colors.white),
+          iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.white),
           actions: [
             IconButton(
               icon: const Icon(Icons.print),
@@ -292,6 +297,7 @@ class _PaymentSummaryScreenState extends State<PaymentSummaryScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Card(
                   elevation: 2,
+                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -359,17 +365,32 @@ class _PaymentSummaryScreenState extends State<PaymentSummaryScreen> {
                 future: _summaryFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
+                    return Center(
+                      child: CircularProgressIndicator(
+                        color: isDark ? Colors.blue[200] : Colors.blue[600],
+                      ),
+                    );
                   } else if (snapshot.hasError) {
                     return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.error_outline, color: Colors.red, size: 40),
+                          Icon(Icons.error_outline, color: Colors.red, size: 40),
                           const SizedBox(height: 12),
-                          Text('Gagal memuat data', style: TextStyle(color: Colors.red)),
+                          Text('Gagal memuat data', 
+                            style: TextStyle(
+                              color: isDark ? Colors.red[200] : Colors.red,
+                            )
+                          ),
                           const SizedBox(height: 8),
-                          Text(snapshot.error.toString(), style: const TextStyle(color: Colors.black54)),
+                          Text(
+                            snapshot.error.toString(), 
+                            style: TextStyle(
+                              color: isDark ? Colors.white70 : Colors.black54,
+                              fontSize: 12,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
                             onPressed: () {
@@ -379,12 +400,23 @@ class _PaymentSummaryScreenState extends State<PaymentSummaryScreen> {
                             },
                             icon: const Icon(Icons.refresh),
                             label: const Text('Coba Lagi'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isDark ? Colors.grey[700] : Colors.blue,
+                              foregroundColor: Colors.white,
+                            ),
                           ),
                         ],
                       ),
                     );
                   } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(child: Text('Tidak ada data pembayaran.', style: TextStyle(color: Colors.black54)));
+                    return Center(
+                      child: Text(
+                        'Tidak ada data pembayaran.', 
+                        style: TextStyle(
+                          color: isDark ? Colors.white70 : Colors.black54,
+                        )
+                      )
+                    );
                   }
                   final summaryList = snapshot.data!;
                   return ListView.separated(
@@ -405,14 +437,22 @@ class _PaymentSummaryScreenState extends State<PaymentSummaryScreen> {
                               builder: (context) => MonthlyPaymentDetailScreen(
                                 month: month,
                                 year: year,
+                                isDark: isDark,
                               ),
                             ),
                           );
                         },
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                             borderRadius: BorderRadius.circular(16),
+                            boxShadow: isDark ? [] : [
+                              BoxShadow(
+                                color: Colors.blueGrey.withValues(alpha: 0.08),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
                           child: Row(
@@ -423,14 +463,38 @@ class _PaymentSummaryScreenState extends State<PaymentSummaryScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(monthName, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15, color: Color(0xFF1565C0))),
+                                    Text(
+                                      monthName, 
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w500, 
+                                        fontSize: 15, 
+                                        color: isDark ? Colors.blue[200] : const Color(0xFF1565C0)
+                                      )
+                                    ),
                                     const SizedBox(height: 4),
-                                    Text('Total: Rp ${currencyFormat.format(item['total'] ?? 0)}', style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF388E3C), fontSize: 14)),
-                                    Text('${item['count'] ?? 0} pembayaran', style: const TextStyle(color: Colors.black45, fontSize: 12)),
+                                    Text(
+                                      'Total: Rp ${currencyFormat.format(item['total'] ?? 0)}', 
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600, 
+                                        color: isDark ? Colors.green[200] : const Color(0xFF388E3C), 
+                                        fontSize: 14
+                                      )
+                                    ),
+                                    Text(
+                                      '${item['count'] ?? 0} pembayaran', 
+                                      style: TextStyle(
+                                        color: isDark ? Colors.white70 : Colors.black45, 
+                                        fontSize: 12
+                                      )
+                                    ),
                                   ],
                                 ),
                               ),
-                              const Icon(Icons.arrow_forward_ios, color: Color(0xFF90CAF9), size: 18),
+                              Icon(
+                                Icons.arrow_forward_ios, 
+                                color: isDark ? Colors.grey[400] : const Color(0xFF90CAF9), 
+                                size: 18
+                              ),
                             ],
                           ),
                         ),
@@ -450,7 +514,14 @@ class _PaymentSummaryScreenState extends State<PaymentSummaryScreen> {
 class MonthlyPaymentDetailScreen extends StatelessWidget {
   final int month;
   final int year;
-  const MonthlyPaymentDetailScreen({super.key, required this.month, required this.year});
+  final bool isDark;
+  
+  const MonthlyPaymentDetailScreen({
+    super.key, 
+    required this.month, 
+    required this.year,
+    this.isDark = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -463,17 +534,55 @@ class MonthlyPaymentDetailScreen extends StatelessWidget {
           title: Text(monthYearTitle),
           backgroundColor: Colors.transparent,
           elevation: 0,
-          iconTheme: const IconThemeData(color: Colors.white),
+          iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.white),
         ),
         body: FutureBuilder<List<Map<String, dynamic>>>(
           future: ApiService.fetchAllPaymentsForMonthYear(month, year),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return Center(
+                child: CircularProgressIndicator(
+                  color: isDark ? Colors.blue[200] : Colors.blue[600],
+                ),
+              );
             } else if (snapshot.hasError) {
-              return Center(child: Text('Gagal memuat detail: ${snapshot.error}', style: TextStyle(color: Colors.red)));
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline, color: Colors.red, size: 40),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Gagal memuat detail: ${snapshot.error}', 
+                      style: TextStyle(
+                        color: isDark ? Colors.red[200] : Colors.red,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        // Rebuild the widget to retry
+                        (context as Element).markNeedsBuild();
+                      },
+                      child: const Text('Coba Lagi'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isDark ? Colors.grey[700] : Colors.blue,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              );
             } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return const Center(child: Text('Tidak ada pembayaran di bulan ini.'));
+              return Center(
+                child: Text(
+                  'Tidak ada pembayaran di bulan ini.',
+                  style: TextStyle(
+                    color: isDark ? Colors.white70 : Colors.black54,
+                  ),
+                ),
+              );
             }
             final payments = snapshot.data!;
             return ListView.builder(
@@ -490,9 +599,9 @@ class MonthlyPaymentDetailScreen extends StatelessWidget {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 14),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
+                    boxShadow: isDark ? [] : [
                       BoxShadow(
                         color: Colors.blueGrey.withValues(alpha: 0.08),
                         blurRadius: 10,
@@ -522,7 +631,11 @@ class MonthlyPaymentDetailScreen extends StatelessWidget {
                                 Expanded(
                                   child: Text(
                                     username,
-                                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: Color(0xFF1565C0)),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600, 
+                                      fontSize: 15, 
+                                      color: isDark ? Colors.blue[200] : const Color(0xFF1565C0)
+                                    ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -530,28 +643,42 @@ class MonthlyPaymentDetailScreen extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 Text(
                                   'Rp ${currencyFormat.format(nominal)}',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF43A047)),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold, 
+                                    fontSize: 16, 
+                                    color: isDark ? Colors.green[200] : const Color(0xFF43A047)
+                                  ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 4),
                             Row(
                               children: [
-                                Icon(Icons.calendar_today, size: 14, color: Colors.blueGrey.shade300),
+                                Icon(Icons.calendar_today, size: 14, color: isDark ? Colors.grey[400] : Colors.blueGrey.shade300),
                                 const SizedBox(width: 4),
-                                Text(paymentDate, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                                Text(
+                                  paymentDate, 
+                                  style: TextStyle(
+                                    fontSize: 12, 
+                                    color: isDark ? Colors.white70 : Colors.black54
+                                  )
+                                ),
                                 const Spacer(),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: method.toLowerCase() == 'cash' ? Colors.green.shade50 : Colors.blue.shade50,
+                                    color: method.toLowerCase() == 'cash' 
+                                      ? (isDark ? Colors.green[900] : Colors.green.shade50) 
+                                      : (isDark ? Colors.blue[900] : Colors.blue.shade50),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
                                     method,
                                     style: TextStyle(
                                       fontSize: 11,
-                                      color: method.toLowerCase() == 'cash' ? Colors.green.shade700 : Colors.blue.shade700,
+                                      color: method.toLowerCase() == 'cash' 
+                                        ? (isDark ? Colors.green[200] : Colors.green.shade700) 
+                                        : (isDark ? Colors.blue[200] : Colors.blue.shade700),
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -563,9 +690,17 @@ class MonthlyPaymentDetailScreen extends StatelessWidget {
                                 padding: const EdgeInsets.only(top: 6),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.sticky_note_2, size: 13, color: Colors.orange.shade300),
+                                    Icon(Icons.sticky_note_2, size: 13, color: isDark ? Colors.orange[200] : Colors.orange.shade300),
                                     const SizedBox(width: 4),
-                                    Expanded(child: Text(note, style: const TextStyle(fontSize: 12, color: Colors.black87))),
+                                    Expanded(
+                                      child: Text(
+                                        note, 
+                                        style: TextStyle(
+                                          fontSize: 12, 
+                                          color: isDark ? Colors.white70 : Colors.black87
+                                        )
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),

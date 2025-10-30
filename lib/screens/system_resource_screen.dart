@@ -16,6 +16,8 @@ class SystemResourceScreen extends StatefulWidget {
 
 class _SystemResourceScreenState extends State<SystemResourceScreen> {
   Timer? _timer;
+  String? _lastBoardName;
+  late Future<String> _imageFuture;
 
   @override
   void initState() {
@@ -25,6 +27,9 @@ class _SystemResourceScreenState extends State<SystemResourceScreen> {
       final provider = context.read<MikrotikProvider>();
       provider.refreshData(forceRefresh: true);
     });
+    
+    // Initialize the image future with a default value
+    _imageFuture = Future.value('assets/mikrotik_product_images/default.png');
     
     // Auto-refresh every 3 seconds for realtime data
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -41,6 +46,15 @@ class _SystemResourceScreenState extends State<SystemResourceScreen> {
   void dispose() {
     _timer?.cancel();
     super.dispose();
+  }
+
+  // Method to update the image future only when board name changes
+  Future<String> _getImageFuture(String? boardName) {
+    if (_lastBoardName != boardName) {
+      _lastBoardName = boardName;
+      _imageFuture = RouterImageServiceSimple.getRouterImageUrl(boardName);
+    }
+    return _imageFuture;
   }
 
   Widget _buildResourceCard(String title, String value, IconData icon, bool isDark) {
@@ -124,7 +138,7 @@ class _SystemResourceScreenState extends State<SystemResourceScreen> {
               height: double.infinity,
               color: isDark ? Colors.grey[900] : Colors.grey[100],
               child: FutureBuilder<String>(
-                future: RouterImageServiceSimple.getRouterImageUrl(boardName),
+                future: _getImageFuture(boardName),
                 builder: (context, snapshot) {
                   print('SystemResourceScreen: FutureBuilder snapshot state: ${snapshot.connectionState}');
                   print('SystemResourceScreen: FutureBuilder hasData: ${snapshot.hasData}');
