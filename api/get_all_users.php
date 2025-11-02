@@ -11,27 +11,34 @@ try {
 
     // $conn disediakan oleh config.php
 
+    $router_id = isset($_GET['router_id']) ? trim($_GET['router_id']) : '';
+    if ($router_id === '') {
+        throw new Exception("router_id is required");
+    }
+
     $odp_id = isset($_GET['odp_id']) ? (int)$_GET['odp_id'] : null;
 
+    // Query utama untuk daftar user
     $sql = "SELECT 
                 u.id,
-                u.username, 
-                u.password, 
-                u.profile, 
-                u.wa, 
-                u.foto, 
+                TRIM(u.username) AS username,
+                u.password,
+                u.profile,
+                u.wa,
+                u.foto,
                 u.maps,
                 DATE_FORMAT(u.tanggal_dibuat, '%Y-%m-%d %H:%i:%s') as tanggal_dibuat,
-                u.odp_id, 
+                u.odp_id,
                 o.name as odp_name
             FROM users u
-            LEFT JOIN odp o ON u.odp_id = o.id";
+            LEFT JOIN odp o ON u.odp_id = o.id
+            WHERE u.router_id = ?";
 
-    $params = [];
-    $types = "";
+    $params = [$router_id];
+    $types = "s";
 
     if ($odp_id !== null) {
-        $sql .= " WHERE u.odp_id = ?";
+        $sql .= " AND u.odp_id = ?";
         $params[] = $odp_id;
         $types .= "i";
     }
@@ -43,9 +50,7 @@ try {
         throw new Exception("SQL prepare failed: " . $conn->error);
     }
 
-    if ($odp_id !== null) {
-        $stmt->bind_param($types, ...$params);
-    }
+    $stmt->bind_param($types, ...$params);
 
     if (!$stmt->execute()) {
         throw new Exception("SQL execute failed: " . $stmt->error);
@@ -61,8 +66,30 @@ try {
         $users[] = $row;
     } 
 
+    // Query COUNT yang sejalan dengan filter di atas
+    $countSql = "SELECT COUNT(*) AS c FROM users u WHERE u.router_id = ?";
+    $countTypes = "s";
+    $countParams = [$router_id];
+    if ($odp_id !== null) {
+        $countSql .= " AND u.odp_id = ?";
+        $countTypes .= "i";
+        $countParams[] = $odp_id;
+    }
+    $countStmt = $conn->prepare($countSql);
+    if (!$countStmt) {
+        throw new Exception("SQL prepare (count) failed: " . $conn->error);
+    }
+    $countStmt->bind_param($countTypes, ...$countParams);
+    if (!$countStmt->execute()) {
+        throw new Exception("SQL execute (count) failed: " . $countStmt->error);
+    }
+    $countRes = $countStmt->get_result()->fetch_assoc();
+    $totalCount = (int)($countRes['c'] ?? 0);
+    $countStmt->close();
+
     $response["success"] = true;
     $response["users"] = $users;
+    $response["count"] = $totalCount;
     unset($response["error"]);
 
 } catch (Exception $e) {

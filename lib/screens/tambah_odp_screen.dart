@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../widgets/gradient_container.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../services/api_service.dart';
+import '../providers/router_session_provider.dart';
 
 class TambahODPScreen extends StatefulWidget {
   final Map<String, dynamic>? odpToEdit;
@@ -105,8 +107,14 @@ class _TambahODPScreenState extends State<TambahODPScreen> {
         data['id'] = widget.odpToEdit!['id'];
       }
 
+      // Get router_id from RouterSessionProvider
+      final routerId = Provider.of<RouterSessionProvider>(context, listen: false).routerId;
+      if (routerId == null || routerId.isEmpty) {
+        throw Exception('Router belum login. Silakan login dulu.');
+      }
+
       final response = await http.post(
-        Uri.parse('${ApiService.baseUrl}/odp_operations.php?operation=${widget.odpToEdit != null ? 'update' : 'add'}'),
+        Uri.parse('${ApiService.baseUrl}/odp_operations.php?router_id=$routerId&operation=${widget.odpToEdit != null ? 'update' : 'add'}'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(data),
       );

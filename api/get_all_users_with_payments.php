@@ -21,9 +21,17 @@ try {
     // Koneksi ke database via config terpusat
     require_once __DIR__ . '/config.php';
 
-    // Ambil semua user
-    $sql_users = "SELECT * FROM users ORDER BY username ASC";
-    $result_users = $conn->query($sql_users);
+    // Ambil router_id
+    $router_id = isset($_GET['router_id']) ? trim($_GET['router_id']) : '';
+    if ($router_id === '') {
+        throw new Exception('router_id is required');
+    }
+
+    // Ambil semua user untuk router ini
+    $stmt_users = $conn->prepare("SELECT * FROM users WHERE router_id = ? ORDER BY username ASC");
+    $stmt_users->bind_param("s", $router_id);
+    $stmt_users->execute();
+    $result_users = $stmt_users->get_result();
     
     if (!$result_users) {
         throw new Exception("Database error: " . $conn->error);
@@ -33,7 +41,7 @@ try {
     while ($user = $result_users->fetch_assoc()) {
         try {
             // Ambil riwayat pembayaran user ini
-            $sql_payments = "SELECT id, amount, payment_date, payment_month, payment_year, method, note, created_by FROM payments WHERE user_id = ? ORDER BY payment_date DESC";
+            $sql_payments = "SELECT id, amount, payment_date, payment_month, payment_year, method, note, created_by FROM payments WHERE user_id = ? AND router_id = ? ORDER BY payment_date DESC";
             $stmt = $conn->prepare($sql_payments);
             
             if (!$stmt) {
@@ -43,7 +51,7 @@ try {
                 continue;
             }
             
-            $stmt->bind_param("i", $user['id']);
+            $stmt->bind_param("is", $user['id'], $router_id);
             $stmt->execute();
             $result_payments = $stmt->get_result();
             $payments = [];
@@ -62,6 +70,7 @@ try {
         }
     }
 
+    $stmt_users->close();
     $conn->close();
     echo json_encode(["status" => "success", "data" => $users]);
 } catch (Exception $e) {

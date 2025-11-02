@@ -30,7 +30,9 @@ class ApiService {
     try {
       return json.decode(body);
     } on FormatException {
-      throw Exception('Format data tidak valid. Periksa konfigurasi API.');
+      // Sertakan cuplikan body agar mudah diagnosa di debug console/UI
+      final preview = body.length > 300 ? body.substring(0, 300) + '...<truncated>' : body;
+      throw Exception('Format data tidak valid. Periksa konfigurasi API.\nPreview: ${preview.replaceAll('\n', ' ').replaceAll('\r', ' ')}');
     }
   }
 
@@ -48,10 +50,15 @@ class ApiService {
     return Exception('Error: ${msg.replaceFirst('Exception: ', '')}');
   }
 
-  static Future<Map<String, dynamic>> getAllUsers() async {
+  /// Get all users from API with router_id filter
+  /// @param routerId The router serial number to filter users
+  static Future<Map<String, dynamic>> getAllUsers({required String routerId}) async {
     try {
       final baseUrl = await _getBaseUrl();
-      final response = await http.get(Uri.parse('$baseUrl/get_all_users.php'));
+      final uri = Uri.parse('$baseUrl/get_all_users.php').replace(queryParameters: {
+        'router_id': routerId,
+      });
+      final response = await http.get(uri);
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
@@ -64,6 +71,7 @@ class ApiService {
 
   // Save single user
   static Future<Map<String, dynamic>> saveUser({
+    required String routerId,
     required String username,
     required String password,
     required String profile,
@@ -78,6 +86,7 @@ class ApiService {
         Uri.parse('$baseUrl/save_user.php'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
+          'router_id': routerId,
           'username': username,
           'password': password,
           'profile': profile,
@@ -103,6 +112,7 @@ class ApiService {
 
   // Update user data tambahan
   static Future<Map<String, dynamic>> updateUserData({
+    required String routerId,
     required String username,
     String? wa,
     String? maps,
@@ -115,6 +125,7 @@ class ApiService {
         Uri.parse('$baseUrl/update_data_tambahan.php'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
+          'router_id': routerId,
           'username': username,
           'wa': wa ?? '',
           'maps': maps ?? '',
@@ -176,12 +187,98 @@ class ApiService {
     }
   }
 
-  static Future<bool> deleteUser(String username) async {
+  // Sync PPP users from Mikrotik to backend DB for a given router
+  static Future<Map<String, dynamic>> syncPPPUsers({
+    required String routerId,
+    required List<Map<String, dynamic>> pppUsers,
+    bool prune = false,
+  }) async {
+    try {
+      final baseUrl = await _getBaseUrl();
+      final payload = {
+        'router_id': routerId,
+        'ppp_users': pppUsers,
+        if (prune) 'prune': true,
+      };
+      // Debug request
+      // ignore: avoid_print
+      print('[SYNC] Sending batch: users=${pppUsers.length} to $baseUrl/sync_ppp_to_db.php');
+      final response = await http.post(
+        Uri.parse('$baseUrl/sync_ppp_to_db.php'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode(payload),
+      );
+      // Debug response - lebih detail
+      final bodyPreview = response.body.length > 500 ? response.body.substring(0, 500) + '...<truncated>' : response.body;
+      // ignore: avoid_print
+      print('[SYNC] Response status=${response.statusCode}');
+      // ignore: avoid_print
+      print('[SYNC] Content-Type: ${response.headers['content-type'] ?? 'unknown'}');
+      // ignore: avoid_print
+      print('[SYNC] Body preview: ${bodyPreview.replaceAll('\n', ' ').replaceAll('\r', ' ')}');
+      
+      if (response.statusCode != 200) {
+        throw Exception('Sync PPP gagal: HTTP ${response.statusCode}\nBody: $bodyPreview');
+      }
+      final decoded = _decodeJsonOrThrow(response) as Map<String, dynamic>;
+      if (decoded['success'] == true) return decoded;
+      throw Exception(decoded['error'] ?? 'Sync PPP gagal');
+    } catch (e) {
+      throw _friendlyException(e);
+    }
+  }
+
+  // Backfill router_id for legacy rows (DEFAULT-ROUTER/empty) to current routerId
+  // Silent fail - tidak throw exception untuk menghindari error di login
+  static Future<Map<String, dynamic>> backfillRouterId({
+    required String routerId,
+    String oldValue = 'DEFAULT-ROUTER',
+    bool includeEmpty = true,
+  }) async {
+    try {
+      final baseUrl = await _getBaseUrl();
+      final response = await http.post(
+        Uri.parse('$baseUrl/backfill_router_id.php'), 
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'router_id': routerId,
+          'old_value': oldValue,
+          'include_empty': includeEmpty,
+        }),
+      ).timeout(const Duration(seconds: 5)); // Timeout cepat untuk fire-and-forget
+      
+      // Cek status code dulu
+      if (response.statusCode != 200) {
+        print('[BACKFILL] HTTP ${response.statusCode}: ${response.body.substring(0, 100)}');
+        return {'success': false, 'error': 'HTTP ${response.statusCode}'};
+      }
+      
+      final decoded = _decodeJsonOrThrow(response) as Map<String, dynamic>;
+      if (decoded['success'] == true) {
+        print('[BACKFILL] Success: ${decoded['updated']} rows updated');
+        return decoded;
+      }
+      print('[BACKFILL] API returned error: ${decoded['error']}');
+      return decoded;
+    } catch (e) {
+      // Silent fail - jangan throw exception
+      print('[BACKFILL] Silent fail (tidak menghalangi login): $e');
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  /// Delete user with router_id filter
+  /// @param routerId The router serial number
+  /// @param username The username to delete
+  static Future<bool> deleteUser({required String routerId, required String username}) async {
     final baseUrl = await _getBaseUrl();
     final response = await http.post(
       Uri.parse('$baseUrl/delete_user.php'),
       headers: {'Content-Type': 'application/json'},
-      body: json.encode({'username': username}),
+      body: json.encode({'router_id': routerId, 'username': username}),
     );
     if (response.statusCode == 200) {
       final data = _decodeJsonOrThrow(response) as Map<String, dynamic>;
@@ -198,7 +295,7 @@ class ApiService {
   }
   
   // New method to fetch all users with payments
-  static Future<List<Map<String, dynamic>>> fetchAllUsersWithPayments() async {
+  static Future<List<Map<String, dynamic>>> fetchAllUsersWithPayments({required String routerId}) async {
     try {
       // Check cache first
       final cacheKey = 'all_users_with_payments';
@@ -210,7 +307,9 @@ class ApiService {
       
       final baseUrl = await _getBaseUrl();
       final response = await http.get(
-        Uri.parse('$baseUrl/get_all_users_with_payments.php'),
+        Uri.parse('$baseUrl/get_all_users_with_payments.php').replace(queryParameters: {
+          'router_id': routerId,
+        }),
         headers: {'Accept': 'application/json'},
       ).timeout(
         const Duration(seconds: 15),
@@ -243,11 +342,14 @@ class ApiService {
   }
   
   // New method to fetch payment summary
-  static Future<List<Map<String, dynamic>>> fetchPaymentSummary() async {
+  static Future<List<Map<String, dynamic>>> fetchPaymentSummary({required String routerId}) async {
     try {
       final baseUrl = await _getBaseUrl();
       final response = await http.get(
-        Uri.parse('$baseUrl/get_payment_summary.php'),
+        Uri.parse('$baseUrl/payment_summary_operations.php').replace(queryParameters: {
+          'action': 'summary',
+          'router_id': routerId,
+        }),
         headers: {'Accept': 'application/json'},
       ).timeout(
         const Duration(seconds: 15),
@@ -290,13 +392,15 @@ class ApiService {
   }
   
   // New method to fetch all payments for a specific month and year
-  static Future<List<Map<String, dynamic>>> fetchAllPaymentsForMonthYear(int month, int year) async {
+  static Future<List<Map<String, dynamic>>> fetchAllPaymentsForMonthYear(int month, int year, {required String routerId}) async {
     try {
       final baseUrl = await _getBaseUrl();
-      final uri = Uri.parse('$baseUrl/get_all_payments_for_month_year.php').replace(
+      final uri = Uri.parse('$baseUrl/payment_summary_operations.php').replace(
         queryParameters: {
+          'action': 'detail',
           'month': month.toString(),
           'year': year.toString(),
+          'router_id': routerId,
         },
       );
       final response = await http.get(

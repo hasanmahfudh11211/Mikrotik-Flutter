@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../widgets/gradient_container.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -7,6 +8,7 @@ import 'tambah_odp_screen.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import '../services/api_service.dart';
+import '../providers/router_session_provider.dart';
 
 class ODPScreen extends StatefulWidget {
   const ODPScreen({Key? key}) : super(key: key);
@@ -43,8 +45,14 @@ class _ODPScreenState extends State<ODPScreen> {
   Future<void> _loadODPList() async {
     setState(() => _isLoading = true);
     try {
+      // Get router_id from RouterSessionProvider
+      final routerId = Provider.of<RouterSessionProvider>(context, listen: false).routerId;
+      if (routerId == null || routerId.isEmpty) {
+        throw Exception('Router belum login. Silakan login dulu.');
+      }
+
       final response = await http.get(
-        Uri.parse('${ApiService.baseUrl}/odp_operations.php'),
+        Uri.parse('${ApiService.baseUrl}/odp_operations.php?router_id=$routerId'),
       );
 
       if (!mounted) return;
@@ -168,7 +176,13 @@ class _ODPScreenState extends State<ODPScreen> {
 
   // Fungsi untuk mengambil user berdasarkan ODP ID
   Future<List<dynamic>> _fetchUsersForOdp(int odpId) async {
-    final response = await http.get(Uri.parse('${ApiService.baseUrl}/get_all_users.php?odp_id=$odpId'));
+    // Get router_id from RouterSessionProvider
+    final routerId = Provider.of<RouterSessionProvider>(context, listen: false).routerId;
+    if (routerId == null || routerId.isEmpty) {
+      return []; // Return empty list if no router_id
+    }
+    
+    final response = await http.get(Uri.parse('${ApiService.baseUrl}/get_all_users.php?router_id=$routerId&odp_id=$odpId'));
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['success'] == true) {
@@ -511,8 +525,14 @@ class _ODPScreenState extends State<ODPScreen> {
 
     setState(() => _isLoading = true);
   try {
+      // Get router_id from RouterSessionProvider
+      final routerId = Provider.of<RouterSessionProvider>(context, listen: false).routerId;
+      if (routerId == null || routerId.isEmpty) {
+        throw Exception('Router belum login');
+      }
+      
       final response = await http.post(
-        Uri.parse('${ApiService.baseUrl}/odp_operations.php?operation=delete'),
+        Uri.parse('${ApiService.baseUrl}/odp_operations.php?router_id=$routerId&operation=delete'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'id': odp['id']}),
       );
@@ -647,7 +667,7 @@ class _ODPScreenState extends State<ODPScreen> {
     return PopupMenuButton<String>(
       icon: Icon(
         Icons.filter_list,
-        color: isDark ? Colors.white : Colors.black87,
+        color: isDark ?  Colors.black87 : Colors.white ,
       ),
       tooltip: 'Filter & Urutkan',
       itemBuilder: (context) => [

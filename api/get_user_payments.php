@@ -21,17 +21,18 @@ try {
     // Koneksi ke database via config terpusat
     require_once __DIR__ . '/config.php';
 
-    // Ambil user_id dari parameter
+    // Ambil user_id dan router_id dari parameter
     $user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : 0;
+    $router_id = isset($_GET['router_id']) ? trim($_GET['router_id']) : '';
     
-    if ($user_id <= 0) {
+    if ($user_id <= 0 || $router_id === '') {
         throw new Exception("Parameter user_id tidak valid");
     }
     
     // Ambil riwayat pembayaran user
     $sql = "SELECT id, amount, payment_date, payment_month, payment_year, method, note, created_by 
             FROM payments 
-            WHERE user_id = ? 
+            WHERE user_id = ? AND router_id = ? 
             ORDER BY payment_date DESC";
     
     $stmt = $conn->prepare($sql);
@@ -40,7 +41,7 @@ try {
         throw new Exception("Database error: " . $conn->error);
     }
     
-    $stmt->bind_param("i", $user_id);
+    $stmt->bind_param("is", $user_id, $router_id);
     $stmt->execute();
     $result = $stmt->get_result();
     

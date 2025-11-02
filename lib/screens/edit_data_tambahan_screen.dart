@@ -7,6 +7,8 @@ import '../widgets/gradient_container.dart';
 import '../widgets/custom_snackbar.dart';
 import 'package:image/image.dart' as img;
 import '../services/api_service.dart';
+import 'package:provider/provider.dart';
+import '../providers/router_session_provider.dart';
 
 class EditDataTambahanScreen extends StatefulWidget {
   final String username;
@@ -69,7 +71,17 @@ class _EditDataTambahanScreenState extends State<EditDataTambahanScreen> {
 
   Future<void> _fetchOdpList() async {
     try {
-      final response = await http.get(Uri.parse('${ApiService.baseUrl}/odp_operations.php'));
+      // Get router_id from RouterSessionProvider
+      final routerId = Provider.of<RouterSessionProvider>(context, listen: false).routerId;
+      if (routerId == null || routerId.isEmpty) {
+        setState(() {
+          _odpList = [];
+          _isLoadingOdp = false;
+        });
+        return;
+      }
+      
+      final response = await http.get(Uri.parse('${ApiService.baseUrl}/odp_operations.php?router_id=$routerId'));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['success'] == true) {
@@ -240,7 +252,12 @@ class _EditDataTambahanScreenState extends State<EditDataTambahanScreen> {
         base64Image = 'data:image/jpeg;base64,' + base64Encode(_compressedImageBytes!);
       }
 
+      final routerId = Provider.of<RouterSessionProvider>(context, listen: false).routerId;
+      if (routerId == null) {
+        throw Exception('Silakan login router ulang');
+      }
       final result = await ApiService.updateUserData(
+        routerId: routerId,
         username: widget.username,
         wa: _waController.text.trim(),
         maps: _mapsController.text.trim(),

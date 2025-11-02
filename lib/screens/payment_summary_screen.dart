@@ -14,6 +14,7 @@ import 'package:android_intent_plus/android_intent.dart';
 import 'package:android_intent_plus/flag.dart';
 import 'package:provider/provider.dart';
 import '../main.dart';
+import '../providers/router_session_provider.dart';
 
 class PaymentSummaryScreen extends StatefulWidget {
   const PaymentSummaryScreen({super.key});
@@ -259,10 +260,23 @@ class _PaymentSummaryScreenState extends State<PaymentSummaryScreen> {
     await intent.launch();
   }
 
+  void _initSummaryFuture() {
+    final routerId = Provider.of<RouterSessionProvider>(context, listen: false).routerId;
+    if (routerId == null) {
+      setState(() {
+        _summaryFuture = Future.error('Silakan login router ulang (serial-number tidak ditemukan)');
+      });
+    } else {
+      setState(() {
+        _summaryFuture = ApiService.fetchPaymentSummary(routerId: routerId);
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    _summaryFuture = ApiService.fetchPaymentSummary();
+    _initSummaryFuture(); // Ganti init/fetch dengan routerId dari Provider
   }
 
   @override
@@ -395,7 +409,7 @@ class _PaymentSummaryScreenState extends State<PaymentSummaryScreen> {
                           ElevatedButton.icon(
                             onPressed: () {
                               setState(() {
-                                _summaryFuture = ApiService.fetchPaymentSummary();
+                                _initSummaryFuture();
                               });
                             },
                             icon: const Icon(Icons.refresh),
@@ -527,6 +541,16 @@ class MonthlyPaymentDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final String monthYearTitle = DateFormat('MMMM yyyy', 'id_ID').format(DateTime(year, month));
     final currencyFormat = NumberFormat('#,##0', 'id_ID');
+    final routerId = Provider.of<RouterSessionProvider>(context, listen: false).routerId;
+    if (routerId == null) {
+      return GradientContainer(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(title: Text(monthYearTitle), backgroundColor: Colors.transparent),
+          body: const Center(child: Text('Silakan login router ulang')),
+        ),
+      );
+    }
     return GradientContainer(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -537,7 +561,7 @@ class MonthlyPaymentDetailScreen extends StatelessWidget {
           iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.white),
         ),
         body: FutureBuilder<List<Map<String, dynamic>>>(
-          future: ApiService.fetchAllPaymentsForMonthYear(month, year),
+          future: ApiService.fetchAllPaymentsForMonthYear(month, year, routerId: routerId),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Center(

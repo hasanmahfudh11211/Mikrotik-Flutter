@@ -14,8 +14,9 @@ if (!$data) {
     exit();
 }
 
-// Ambil username dari JSON
-$username = $conn->real_escape_string($data->username ?? '');
+// Ambil username dan router_id dari JSON
+$username = trim($data->username ?? '');
+$router_id = trim($data->router_id ?? '');
 
 if (empty($username)) {
     http_response_code(400);
@@ -23,11 +24,19 @@ if (empty($username)) {
     exit();
 }
 
-// Hapus user dari database
-$sql = "DELETE FROM users WHERE username = '$username'";
+if (empty($router_id)) {
+    http_response_code(400);
+    echo json_encode(["success" => false, "error" => "router_id tidak boleh kosong"]);
+    exit();
+}
 
-if ($conn->query($sql) === TRUE) {
-    if ($conn->affected_rows > 0) {
+// Hapus user dari database dengan filter router_id
+$sql = "DELETE FROM users WHERE username = ? AND router_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("ss", $username, $router_id);
+
+if ($stmt->execute()) {
+    if ($stmt->affected_rows > 0) {
         echo json_encode([
             "success" => true,
             "message" => "User berhasil dihapus"
@@ -43,9 +52,11 @@ if ($conn->query($sql) === TRUE) {
     http_response_code(500);
     echo json_encode([
         "success" => false,
-        "error" => $conn->error
+        "error" => $stmt->error
     ]);
 }
+$stmt->close();
 
 $conn->close();
 ?>
+

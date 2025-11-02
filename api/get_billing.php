@@ -18,16 +18,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once __DIR__ . '/config.php';
 
 $user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : 0;
-if ($user_id <= 0) {
+$router_id = isset($_GET['router_id']) ? trim($_GET['router_id']) : '';
+if ($user_id <= 0 || $router_id === '') {
     http_response_code(400);
-    echo json_encode(["success" => false, "error" => "User ID tidak valid"]);
+    echo json_encode(["success" => false, "error" => "Parameter tidak valid (user_id/router_id)"]);
     exit();
 }
 
 // Query data dari tabel payments
-$sql = "SELECT id, payment_month, payment_year, amount, payment_date, method, note, created_by FROM payments WHERE user_id = ? ORDER BY payment_date DESC";
+$sql = "SELECT id, payment_month, payment_year, amount, payment_date, method, note, created_by FROM payments WHERE user_id = ? AND router_id = ? ORDER BY payment_date DESC";
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $user_id);
+$stmt->bind_param("is", $user_id, $router_id);
 $stmt->execute();
 $result = $stmt->get_result();
 

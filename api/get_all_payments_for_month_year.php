@@ -14,7 +14,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/router_id_helper.php';
 
+$router_id = requireRouterIdFromGet($conn);
 $month = isset($_GET['month']) ? intval($_GET['month']) : 0;
 $year = isset($_GET['year']) ? intval($_GET['year']) : 0;
 if ($month <= 0 || $year <= 0) {
@@ -23,9 +25,9 @@ if ($month <= 0 || $year <= 0) {
     exit();
 }
 
-$sql = "SELECT * FROM payments WHERE payment_month = ? AND payment_year = ? ORDER BY payment_date DESC";
+$sql = "SELECT * FROM payments WHERE router_id = ? AND payment_month = ? AND payment_year = ? ORDER BY payment_date DESC";
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("ii", $month, $year);
+$stmt->bind_param("sii", $router_id, $month, $year);
 $stmt->execute();
 $result = $stmt->get_result();
 

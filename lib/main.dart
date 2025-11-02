@@ -17,6 +17,7 @@ import 'screens/odp_screen.dart';
 import 'screens/billing_screen.dart';
 import 'services/mikrotik_service.dart';
 import 'providers/mikrotik_provider.dart';
+import 'providers/router_session_provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 // Reusable widget to eliminate code duplication
@@ -90,6 +91,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => RouterSessionProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

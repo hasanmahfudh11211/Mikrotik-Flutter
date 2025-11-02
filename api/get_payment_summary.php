@@ -16,10 +16,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 // Koneksi ke database via config terpusat
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/router_id_helper.php';
 
-// Query summary pembayaran per bulan/tahun
-$sql = "SELECT payment_month, payment_year, SUM(amount) as total, COUNT(*) as count FROM payments GROUP BY payment_year, payment_month ORDER BY payment_year DESC, payment_month DESC";
-$result = $conn->query($sql);
+$router_id = requireRouterIdFromGet($conn);
+
+// Query summary pembayaran per bulan/tahun untuk router tertentu
+$sql = "SELECT payment_month, payment_year, SUM(amount) as total, COUNT(*) as count FROM payments WHERE router_id = ? GROUP BY payment_year, payment_month ORDER BY payment_year DESC, payment_month DESC";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("s", $router_id);
+$stmt->execute();
+$result = $stmt->get_result();
 
 $summary = [];
 while ($row = $result->fetch_assoc()) {
@@ -32,5 +38,6 @@ while ($row = $result->fetch_assoc()) {
 }
 
 echo json_encode(["success" => true, "data" => $summary]);
+$stmt->close();
 $conn->close();
 exit(); 

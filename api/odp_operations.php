@@ -12,8 +12,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 // Koneksi ke database via config terpusat
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/router_id_helper.php';
 
 // $conn disediakan oleh config.php
+
+// Validasi router_id untuk semua operasi
+$router_id = requireRouterIdFromGet($conn);
 
 // Get operation type from query parameter
 $operation = isset($_GET['operation']) ? $_GET['operation'] : '';
@@ -72,8 +76,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $operation === 'add') {
 
         // Insert splitter ODP
         $stmt = $conn->prepare(
-            "INSERT INTO odp (name, location, maps_link, type, splitter_type, ratio_used, ratio_total) 
-             VALUES (?, ?, ?, 'splitter', ?, NULL, NULL)"
+            "INSERT INTO odp (router_id, name, location, maps_link, type, splitter_type, ratio_used, ratio_total) 
+             VALUES (?, ?, ?, ?, 'splitter', ?, NULL, NULL)"
         );
 
         if (!$stmt) {
@@ -85,7 +89,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $operation === 'add') {
             exit();
         }
 
-        $stmt->bind_param("ssss", 
+        $stmt->bind_param("sssss", 
+            $router_id,
             $data['name'],
             $data['location'],
             $data['maps_link'],
@@ -116,7 +121,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $operation === 'add') {
             exit();
         }
 
-        $stmt->bind_param("sssii", 
+        $stmt->bind_param("ssssii", 
+            $router_id,
             $data['name'],
             $data['location'],
             $data['maps_link'],
@@ -191,7 +197,7 @@ else if ($_SERVER['REQUEST_METHOD'] === 'POST' && $operation === 'update') {
         $stmt = $conn->prepare(
             "UPDATE odp SET name = ?, location = ?, maps_link = ?, type = 'splitter', 
              splitter_type = ?, ratio_used = NULL, ratio_total = NULL 
-             WHERE id = ?"
+             WHERE id = ? AND router_id = ?"
         );
 
         if (!$stmt) {
@@ -203,12 +209,13 @@ else if ($_SERVER['REQUEST_METHOD'] === 'POST' && $operation === 'update') {
             exit();
         }
 
-        $stmt->bind_param("ssssi", 
+        $stmt->bind_param("ssssis", 
             $data['name'],
             $data['location'],
             $data['maps_link'],
             $data['splitter_type'],
-            $data['id']
+            $data['id'],
+            $router_id
         );
     } else if ($data['type'] === 'ratio') {
         if (!isset($data['ratio_used']) || !isset($data['ratio_total'])) {
@@ -223,7 +230,7 @@ else if ($_SERVER['REQUEST_METHOD'] === 'POST' && $operation === 'update') {
         $stmt = $conn->prepare(
             "UPDATE odp SET name = ?, location = ?, maps_link = ?, type = 'ratio', 
              splitter_type = NULL, ratio_used = ?, ratio_total = ? 
-             WHERE id = ?"
+             WHERE id = ? AND router_id = ?"
         );
 
         if (!$stmt) {
@@ -235,13 +242,14 @@ else if ($_SERVER['REQUEST_METHOD'] === 'POST' && $operation === 'update') {
             exit();
         }
 
-        $stmt->bind_param("sssiii", 
+        $stmt->bind_param("sssiiis", 
             $data['name'],
             $data['location'],
             $data['maps_link'],
             $data['ratio_used'],
             $data['ratio_total'],
-            $data['id']
+            $data['id'],
+            $router_id
         );
     }
 
@@ -286,7 +294,7 @@ else if ($_SERVER['REQUEST_METHOD'] === 'POST' && $operation === 'delete') {
     }
 
     // Prepare and execute delete statement
-    $stmt = $conn->prepare("DELETE FROM odp WHERE id = ?");
+    $stmt = $conn->prepare("DELETE FROM odp WHERE id = ? AND router_id = ?");
     
     if (!$stmt) {
         http_response_code(500);
@@ -297,7 +305,7 @@ else if ($_SERVER['REQUEST_METHOD'] === 'POST' && $operation === 'delete') {
         exit();
     }
 
-    $stmt->bind_param("i", $data['id']);
+    $stmt->bind_param("is", $data['id'], $router_id);
 
     if ($stmt->execute()) {
         if ($stmt->affected_rows > 0) {
@@ -324,26 +332,21 @@ else if ($_SERVER['REQUEST_METHOD'] === 'POST' && $operation === 'delete') {
 }
 // Handle GET request for fetching ODPs
 else if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $query = "SELECT * FROM odp ORDER BY name ASC";
-    $result = $conn->query($query);
-
-    if ($result) {
-        $odp_list = [];
-        while ($row = $result->fetch_assoc()) {
-            $odp_list[] = $row;
-        }
-        
-        echo json_encode([
-            "success" => true,
-            "odp_list" => $odp_list
-        ]);
-    } else {
-        http_response_code(500);
-        echo json_encode([
-            "success" => false,
-            "error" => "Query failed: " . $conn->error
-        ]);
+    $stmt = $conn->prepare("SELECT * FROM odp WHERE router_id = ? ORDER BY name ASC");
+    $stmt->bind_param("s", $router_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $odp_list = [];
+    while ($row = $result->fetch_assoc()) {
+        $odp_list[] = $row;
     }
+    
+    echo json_encode([
+        "success" => true,
+        "odp_list" => $odp_list
+    ]);
+    $stmt->close();
 }
 // Handle invalid request method
 else {

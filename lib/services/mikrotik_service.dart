@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'dart:io';
 
 class MikrotikService {
   String? ip;
@@ -11,11 +12,35 @@ class MikrotikService {
 
   String get baseUrl => 'http://$ip:$port/rest';
 
-  Map<String, String> get _headers => {
-        'Authorization':
-            'Basic ${base64Encode(utf8.encode('$username:$password'))}',
-        'Content-Type': 'application/json',
+  Map<String, String> get _headers {
+    if (username == null || password == null || username!.isEmpty) {
+      throw Exception('Username dan password harus diisi');
+    }
+    final credentials = '$username:$password';
+    final encoded = base64Encode(utf8.encode(credentials));
+    // Untuk GET request, kita tidak perlu Content-Type
+    // API client biasanya tidak mengirim Content-Type untuk GET
+    return {
+      'Authorization': 'Basic $encoded',
+      'Accept': 'application/json',
       };
+  }
+
+  // Cek konektivitas TCP ke IP:port sebelum melakukan HTTP request
+  Future<void> _probeConnectivity() async {
+    final host = ip;
+    final p = int.tryParse(port ?? '');
+    if (host == null || host.isEmpty || p == null) return; // biarkan HTTP yang memvalidasi
+    try {
+      final socket = await Socket.connect(host, p, timeout: const Duration(seconds: 3));
+      await socket.close();
+    } on SocketException {
+      throw Exception(
+        'Tidak dapat terhubung ke $host:$p (TCP)\n\n'
+        'Periksa bahwa layanan Web (www) di router aktif dan port dapat diakses.'
+      );
+    }
+  }
 
   String _formatErrorMessage(String message) {
     // Remove technical details and format for user display
@@ -38,16 +63,120 @@ class MikrotikService {
     return message;
   }
 
+  void _logBlock(String title, Map<String, String> rows) {
+    final border = '=' * (12 + title.length);
+    print('[MKT] $border');
+    print('[MKT] >>> $title');
+    rows.forEach((k, v) => print('[MKT] • $k: $v'));
+    print('[MKT] $border');
+  }
+
+  Future<Map<String, dynamic>> getLicense() async {
+    try {
+      final uri = Uri.parse('$baseUrl/system/license');
+      _logBlock('License Request', {
+        'URL': uri.toString(),
+        'User': username ?? '-',
+      });
+      await _probeConnectivity();
+      final response = await http.get(
+        uri,
+        headers: _headers,
+      ).timeout(const Duration(seconds: 20));
+      _logBlock('License Response', {
+        'Status': '${response.statusCode}',
+        'Body': response.body,
+      });
+      
+      if (response.statusCode == 200) {
+        try {
+          final body = response.body.trim();
+          if (body.isEmpty) {
+            throw Exception('Response body kosong dari router');
+          }
+          final decoded = jsonDecode(body) as Map<String, dynamic>;
+          
+          // Beberapa perangkat/versi tidak menampilkan serial-number di license.
+          // Gunakan 'serial-number' jika ada; jika tidak, gunakan 'software-id' (unik per instalasi/CHR).
+          if (!decoded.containsKey('serial-number') && decoded['software-id'] == null) {
+            print('DEBUG License: serial-number & software-id tidak ditemukan di response');
+            print('DEBUG License: Keys yang tersedia = ${decoded.keys.toList()}');
+            throw Exception('Identitas license tidak ditemukan di response router');
+          }
+          
+          return decoded;
+        } catch (e) {
+          if (e is Exception && e.toString().contains('serial-number')) {
+            rethrow;
+          }
+          throw Exception(
+            'Gagal memparse license response\n\n'
+            'Response: ${response.body.substring(0, response.body.length > 100 ? 100 : response.body.length)}\n\n'
+            'Error: $e'
+          );
+        }
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw Exception(
+          'Akses ditolak saat mengambil license\n\n'
+          'Pastikan user memiliki akses ke system/license'
+        );
+      } else {
+        throw Exception('Gagal mengambil license: Status ${response.statusCode}\n${response.body}');
+      }
+    } catch (e) {
+      if (e is Exception) {
+        rethrow;
+      }
+      throw Exception('Error mengambil license: $e');
+    }
+  }
+
+  // Mendapatkan identitas unik router
+  // Kebijakan: gunakan serial-number dari system/license sebagai routerId utama.
+  // Jika tidak tersedia, fallback ke software-id, lalu system/identity.name@ip:port.
+  Future<String> getRouterSerialOrId() async {
+    // 1) Ambil dari system/license (prioritas: serial-number > software-id)
+    try {
+      final lic = await getLicense();
+      // Prioritas 1: serial-number (lebih unik, dari hardware fisik)
+      final serialNumber = lic['serial-number']?.toString();
+      if (serialNumber != null && serialNumber.isNotEmpty) return serialNumber;
+      // Prioritas 2: software-id (untuk CHR/virtual installation)
+      final softwareId = lic['software-id']?.toString();
+      if (softwareId != null && softwareId.isNotEmpty) return softwareId;
+    } catch (_) {
+      // abaikan, lanjut fallback berikutnya
+    }
+    
+    // 2) Fallback terakhir: gunakan system/identity.name + ip:port
+    try {
+      final identity = await getIdentity();
+      final name = identity['name']?.toString() ?? 'UNKNOWN';
+      final addr = '$ip:$port';
+      return 'RB-$name@$addr';
+    } catch (_) {
+      // Jika semuanya gagal, kembalikan IP:PORT agar tetap bisa lanjut (walau kurang ideal)
+      return '$ip:$port';
+    }
+  }
+
   Future<Map<String, dynamic>> getIdentity() async {
     try {
+      final uri = Uri.parse('$baseUrl/system/identity');
+      _logBlock('Login Request', {
+        'URL': uri.toString(),
+        'User': username ?? '-',
+        'PasswordLen': '${password?.length ?? 0}',
+      });
+      await _probeConnectivity();
     final response = await http.get(
-      Uri.parse('$baseUrl/system/identity'),
+        uri,
       headers: _headers,
       ).timeout(
-        const Duration(seconds: 10),
+        const Duration(seconds: 20),
         onTimeout: () {
           throw Exception(
-            'Koneksi timeout (10 detik)\n\n'
+            'Koneksi timeout (20 detik)\n\n'
             'Kemungkinan penyebab:\n'
             '• Router tidak menyala\n'
             '• IP Address salah\n'
@@ -60,8 +189,25 @@ class MikrotikService {
         },
     );
 
+      _logBlock('Login Response', {
+        'Status': '${response.statusCode}',
+        'Body': response.body,
+      });
+
     if (response.statusCode == 200) {
-      return jsonDecode(response.body) as Map<String, dynamic>;
+        try {
+          final body = response.body.trim();
+          if (body.isEmpty) {
+            throw Exception('Response body kosong dari router');
+          }
+          return jsonDecode(body) as Map<String, dynamic>;
+        } catch (e) {
+          throw Exception(
+            'Gagal memparse response dari router\n\n'
+            'Response: ${response.body.substring(0, response.body.length > 100 ? 100 : response.body.length)}\n\n'
+            'Error: $e'
+          );
+        }
       } else if (response.statusCode == 401 || response.statusCode == 403) {
         throw Exception(
           'Login Gagal\n\n'

@@ -5,7 +5,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'dart:convert';
 import '../services/mikrotik_service.dart';
+import '../services/api_service.dart';
 import '../widgets/gradient_container.dart';
+import 'package:provider/provider.dart';
+import '../providers/router_session_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -454,7 +457,7 @@ Solusi:
     });
 
     try {
-      // Show loading dialog with timeout indicator
+      // Show loading dialog
       if (mounted) {
         // Check if dark mode is enabled
         final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -526,7 +529,6 @@ Solusi:
           },
         );
       }
-
       final address = '${_ipController.text}:${_portController.text}';
       final service = MikrotikService(
         ip: _ipController.text,
@@ -534,15 +536,61 @@ Solusi:
         username: _usernameController.text,
         password: _passwordController.text,
       );
-      
       await service.getIdentity();
-      
-      // Save login data
+      // Ambil routerId dengan fallback berjenjang (serial-number -> software-id -> identity)
+      final routerId = await service.getRouterSerialOrId();
+      if (routerId.isEmpty) {
+        throw Exception('Gagal mengambil identitas router');
+      }
+      // Simpan session router secara global
+      Provider.of<RouterSessionProvider>(context, listen: false).saveSession(
+        routerId: routerId,
+        ip: _ipController.text,
+        port: _portController.text,
+        username: _usernameController.text,
+        password: _passwordController.text,
+      );
+      // Save login data ke shared prefs (opsional)
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('ip', _ipController.text);
       await prefs.setString('port', _portController.text);
       await prefs.setString('username', _usernameController.text);
-        await prefs.setString('password', _passwordController.text);
+      await prefs.setString('password', _passwordController.text);
+      await prefs.setString('router_id', routerId);
+
+      // Trigger automatic backfill of legacy rows to this routerId (fire and forget)
+      // Backfill sekarang sudah silent fail di dalam method, tidak perlu try-catch lagi
+      // ignore: unawaited_futures
+      ApiService.backfillRouterId(routerId: routerId);
+
+      // Trigger initial sync PPP secrets from Mikrotik into DB for this router (fire and forget)
+      try {
+        final secrets = await service.getPPPSecret();
+        final normalized = secrets
+            .map((s) => {
+                  'name': s['name']?.toString() ?? '',
+                  'password': s['password']?.toString() ?? '',
+                  'profile': s['profile']?.toString() ?? '',
+                })
+            .where((u) => (u['name'] as String).isNotEmpty)
+            .toList();
+        if (normalized.isNotEmpty) {
+          // Kirim per batch agar payload tidak terlalu besar (menghindari 413/HTML error)
+          const int batchSize = 100;
+          for (int i = 0; i < normalized.length; i += batchSize) {
+            final batch = normalized.sublist(i, i + batchSize > normalized.length ? normalized.length : i + batchSize);
+            try {
+              await ApiService.syncPPPUsers(
+                routerId: routerId,
+                pppUsers: batch,
+                prune: i == 0, // prune pada batch pertama agar DB hanya sesuai PPPoE
+              );
+            } catch (_) {
+              // abaikan kegagalan batch; tetap lanjut
+            }
+          }
+        }
+      } catch (_) {}
 
       // Save to login history
       final loginData = {

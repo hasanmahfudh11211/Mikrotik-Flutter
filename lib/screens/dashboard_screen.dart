@@ -5,6 +5,7 @@ import '../services/mikrotik_service.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/gradient_container.dart';
+import 'all_users_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -50,10 +51,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Inisialisasi nilai awal
     _providerListener();
     // Reduced timer frequency to prevent battery drain and memory leaks
-    _timer = Timer.periodic(const Duration(seconds: 5), (_) async {
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) async {
       if (!mounted) return;
       setState(() {
-        _uptimeSeconds += 5; // Increment by 5 seconds
+        _uptimeSeconds += 1; // Increment by 1 seconds
         _uptimeDisplay = _formatUptime(_uptimeSeconds);
       });
       // Fetch CPU load dari API less frequently
@@ -643,89 +644,99 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 
   Widget _secretBox(BuildContext context, MikrotikProvider provider) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF4CAF50), Color(0xFF388E3C)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.green.withOpacity(0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return InkWell(
+      onTap: () {
+        // Navigate ke All Users Screen saat kotak hijau diklik
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AllUsersScreen()),
+        );
+      },
+      borderRadius: BorderRadius.circular(15),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF4CAF50), Color(0xFF388E3C)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-        ],
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.people,
-                  color: Colors.white,
-                  size: 28,
-                ),
-              ),
-              Expanded(
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'Total Users',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _isStatsVisible ? '${provider.pppSecrets.length}' : '***',
-                        style: const TextStyle(
-                          fontSize: 36,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _isStatsVisible = !_isStatsVisible;
-                  });
-                },
-                child: Container(
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.green.withOpacity(0.2),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Row(
+              children: [
+                Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    _isStatsVisible ? Icons.visibility : Icons.visibility_off,
+                  child: const Icon(
+                    Icons.people,
                     color: Colors.white,
                     size: 28,
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Total Users',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _isStatsVisible ? '${provider.pppSecrets.length}' : '***',
+                          style: const TextStyle(
+                            fontSize: 36,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _isStatsVisible = !_isStatsVisible;
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      _isStatsVisible ? Icons.visibility : Icons.visibility_off,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

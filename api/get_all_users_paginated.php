@@ -7,17 +7,21 @@ $response = ["success" => false, "users" => [], "error" => "An unknown error occ
 
 try {
     require_once __DIR__ . '/config.php';
-
+    require_once __DIR__ . '/router_id_helper.php';
+    
+    $router_id = requireRouterIdFromGet($conn);
     $odp_id = isset($_GET['odp_id']) ? (int)$_GET['odp_id'] : null;
     $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
     $limit = isset($_GET['limit']) ? max(1, intval($_GET['limit'])) : 50;
     $offset = ($page - 1) * $limit;
 
     // Hitung total user
-    $countSql = "SELECT COUNT(*) as total FROM users" . ($odp_id !== null ? " WHERE odp_id = ?" : "");
+    $countSql = "SELECT COUNT(*) as total FROM users WHERE router_id = ?" . ($odp_id !== null ? " AND odp_id = ?" : "");
     $countStmt = $conn->prepare($countSql);
     if ($odp_id !== null) {
-        $countStmt->bind_param("i", $odp_id);
+        $countStmt->bind_param("si", $router_id, $odp_id);
+    } else {
+        $countStmt->bind_param("s", $router_id);
     }
     $countStmt->execute();
     $countResult = $countStmt->get_result();
@@ -30,11 +34,12 @@ try {
                 DATE_FORMAT(u.tanggal_dibuat, '%Y-%m-%d %H:%i:%s') as tanggal_dibuat,
                 u.odp_id, o.name as odp_name
             FROM users u
-            LEFT JOIN odp o ON u.odp_id = o.id";
-    $params = [];
-    $types = "";
+            LEFT JOIN odp o ON u.odp_id = o.id
+            WHERE u.router_id = ?";
+    $params = [$router_id];
+    $types = "s";
     if ($odp_id !== null) {
-        $sql .= " WHERE u.odp_id = ?";
+        $sql .= " AND u.odp_id = ?";
         $params[] = $odp_id;
         $types .= "i";
     }
@@ -47,11 +52,7 @@ try {
     if (!$stmt) {
         throw new Exception("SQL prepare failed: " . $conn->error);
     }
-    if ($odp_id !== null) {
-        $stmt->bind_param($types, ...$params);
-    } else {
-        $stmt->bind_param($types, $params[0], $params[1]);
-    }
+    $stmt->bind_param($types, ...$params);
     if (!$stmt->execute()) {
         throw new Exception("SQL execute failed: " . $stmt->error);
     }

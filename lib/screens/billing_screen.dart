@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../widgets/gradient_container.dart';
+import '../widgets/custom_snackbar.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'payment_summary_screen.dart';
 import 'package:month_picker_dialog/month_picker_dialog.dart';
+import 'package:provider/provider.dart';
+import '../providers/router_session_provider.dart';
 
 class CurrencyInputFormatter extends TextInputFormatter {
   @override
@@ -69,7 +72,15 @@ class _BillingScreenState extends State<BillingScreen> {
       _error = null;
       // Clear cache when manually refreshing
       ApiService.clearCache();
-      _usersFuture = ApiService.fetchAllUsersWithPayments().then((data) {
+      final routerId = Provider.of<RouterSessionProvider>(context, listen: false).routerId;
+      if (routerId == null) {
+        setState(() {
+          _error = 'Silakan login router ulang (serial-number tidak ditemukan)';
+          _usersFuture = Future.value(<Map<String, dynamic>>[]);
+        });
+        return;
+      }
+      _usersFuture = ApiService.fetchAllUsersWithPayments(routerId: routerId).then((data) {
         _users = data;
         return data;
       }).catchError((e) {
@@ -344,10 +355,17 @@ class _BillingScreenState extends State<BillingScreen> {
                                     throw Exception('User ID tidak ditemukan');
                                   }
                                   
+                                  // Get router_id from RouterSessionProvider
+                                  final routerId = Provider.of<RouterSessionProvider>(context, listen: false).routerId;
+                                  if (routerId == null || routerId.isEmpty) {
+                                    throw Exception('Router belum login. Silakan login dulu.');
+                                  }
+                                  
                                   final amountRaw = amountController.text.replaceAll('.', '').replaceAll(',', '');
                                   final amount = double.tryParse(amountRaw) ?? 0;
                                   final url = Uri.parse('${ApiService.baseUrl}/payment_operations.php?operation=add');
                                   final body = {
+                                    'router_id': routerId,
                                     'user_id': userId,
                                     'amount': amount,
                                     'payment_date': DateFormat('yyyy-MM-dd').format(paymentDate),
@@ -381,22 +399,22 @@ class _BillingScreenState extends State<BillingScreen> {
                                   } else {
                                     Navigator.of(dialogContext).pop();
                                     if (context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Gagal: ${respData['error'] ?? 'Unknown error'}'), 
-                                          backgroundColor: isDark ? Colors.grey[800] : Colors.red
-                                        ),
+                                      CustomSnackbar.show(
+                                        context: context,
+                                        message: 'Gagal menambahkan pembayaran',
+                                        additionalInfo: respData['error'] ?? 'Unknown error',
+                                        isSuccess: false,
                                       );
                                     }
                                   }
                                 } catch (e) {
                                   Navigator.of(dialogContext).pop();
                                   if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Error: ${e.toString()}'), 
-                                        backgroundColor: isDark ? Colors.grey[800] : Colors.red
-                                      ),
+                                    CustomSnackbar.show(
+                                      context: context,
+                                      message: 'Error',
+                                      additionalInfo: e.toString(),
+                                      isSuccess: false,
                                     );
                                   }
                                 } finally {
@@ -1191,41 +1209,11 @@ class _BillingScreenState extends State<BillingScreen> {
                                       if (_tempSelectedMonth != null) {
                                         _selectedMonth = _tempSelectedMonth!;
                                       }
-                                      _showAllPayments = false; // Set to false when applying specific month
+                                      _showAllPayments = true; // Selalu tampilkan semua pembayaran di popup
                                       _showFilterPanel = false; // Close the filter panel after applying
                                     });
                                   },
                                   child: const Text('Apply'),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              // Tombol Show All
-                              SizedBox(
-                                height: 28,
-                                child: OutlinedButton(
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(6)
-                                    ),
-                                    side: BorderSide(
-                                      color: isDark ? Colors.blue.shade700 : Colors.blue.shade200
-                                    ),
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      _showAllPayments = true;
-                                      _showFilterPanel = false; // Close the filter panel after applying
-                                    });
-                                  },
-                                  child: Text(
-                                    'Semua', 
-                                    style: TextStyle(
-                                      color: isDark ? Colors.blue.shade300 : const Color(0xFF1976D2), 
-                                      fontWeight: FontWeight.bold, 
-                                      fontSize: 12
-                                    )
-                                  ),
                                 ),
                               ),
                             ],
@@ -1246,20 +1234,8 @@ class _BillingScreenState extends State<BillingScreen> {
                       separatorBuilder: (context, index) => const SizedBox(height: 12),
                       itemBuilder: (context, i) {
                         final user = users[i];
-                        // Status lunas/Belum harus sesuai bulan yang dipilih ATAU semua pembayaran jika showAllPayments true
-                        bool hasPaid = false;
-                        if (_showAllPayments) {
-                          // Jika menampilkan semua, anggap user sudah bayar jika memiliki pembayaran apapun
-                          hasPaid = (user['payments'] as List).isNotEmpty;
-                        } else {
-                          // Status lunas/Belum harus sesuai bulan yang dipilih
-                          hasPaid = (user['payments'] as List).any((p) {
-                            final paymentDate = DateTime.tryParse(p['payment_date'] ?? '');
-                            return paymentDate != null &&
-                              paymentDate.year == _selectedMonth.year &&
-                              paymentDate.month == _selectedMonth.month;
-                          });
-                        }
+                        // Status lunas/Belum harus sesuai bulan yang dipilih
+                        // (_showAllPayments hanya mempengaruhi popup, bukan status card)
                         
                         return GestureDetector(
                           onTap: () => _showBillingDetailSheet(user),
@@ -1424,40 +1400,86 @@ class _BillingScreenState extends State<BillingScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return showDialog(
       context: context,
+      barrierDismissible: true,
       builder: (BuildContext context) {
         return AlertDialog(
           backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
+          contentPadding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.check_circle, color: Colors.green),
-              const SizedBox(width: 10),
+              const SizedBox(height: 24),
+              // Icon with animated background
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.green.withOpacity(0.2) : Colors.green.shade50,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.check_circle_rounded,
+                  color: Colors.green,
+                  size: 40,
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Title
               Text(
-                'Berhasil', 
+                'Berhasil!',
                 style: TextStyle(
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: isDark ? Colors.white : Colors.black87,
-                )
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              // Message
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  message,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isDark ? Colors.white70 : Colors.black54,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 24),
+              // OK Button
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.done_rounded, size: 18),
+                    label: const Text(
+                      'OK',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 2,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
-          content: Text(
-            message,
-            style: TextStyle(
-              color: isDark ? Colors.white70 : Colors.black87,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'OK',
-                style: TextStyle(
-                  color: isDark ? Colors.blue.shade300 : Colors.blue,
-                ),
-              ),
-            ),
-          ],
         );
       },
     );
@@ -1704,12 +1726,19 @@ class _BillingScreenState extends State<BillingScreen> {
                           });
                           
                           try {
+                            // Get router_id from RouterSessionProvider
+                            final routerId = Provider.of<RouterSessionProvider>(context, listen: false).routerId;
+                            if (routerId == null || routerId.isEmpty) {
+                              throw Exception('Router belum login. Silakan login dulu.');
+                            }
+                            
                             final paymentId = payment['id'];
                             final userId = user['id'];
                             final amountRaw = amountController.text.replaceAll('.', '').replaceAll(',', '');
                             final amount = double.tryParse(amountRaw) ?? 0;
                             final url = Uri.parse('${ApiService.baseUrl}/payment_operations.php?operation=update');
                             final body = {
+                              'router_id': routerId,
                               'id': paymentId,
                               'user_id': userId,
                               'amount': amount,
@@ -1738,22 +1767,22 @@ class _BillingScreenState extends State<BillingScreen> {
                             } else {
                               Navigator.of(dialogContext).pop();
                               if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Gagal: ${respData['error'] ?? 'Unknown error'}'), 
-                                    backgroundColor: isDark ? Colors.grey[800] : Colors.red
-                                  ),
+                                CustomSnackbar.show(
+                                  context: context,
+                                  message: 'Gagal mengupdate pembayaran',
+                                  additionalInfo: respData['error'] ?? 'Unknown error',
+                                  isSuccess: false,
                                 );
                               }
                             }
                           } catch (e) {
                             Navigator.of(dialogContext).pop();
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Error: ${e.toString()}'), 
-                                  backgroundColor: isDark ? Colors.grey[800] : Colors.red
-                                ),
+                              CustomSnackbar.show(
+                                context: context,
+                                message: 'Error',
+                                additionalInfo: e.toString(),
+                                isSuccess: false,
                               );
                             }
                           } finally {
@@ -1820,9 +1849,15 @@ class _BillingScreenState extends State<BillingScreen> {
               ),
               onPressed: () async {
                 try {
+                  // Get router_id from RouterSessionProvider
+                  final routerId = Provider.of<RouterSessionProvider>(context, listen: false).routerId;
+                  if (routerId == null || routerId.isEmpty) {
+                    throw Exception('Router belum login. Silakan login dulu.');
+                  }
+                  
                   final paymentId = payment['id'];
                   final url = Uri.parse('${ApiService.baseUrl}/payment_operations.php?operation=delete');
-                  final body = {'id': paymentId};
+                  final body = {'router_id': routerId, 'id': paymentId};
                   
                   final resp = await http.delete(
                     url,
@@ -1843,22 +1878,22 @@ class _BillingScreenState extends State<BillingScreen> {
                   } else {
                     Navigator.of(dialogContext).pop();
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Gagal: ${respData['error'] ?? 'Unknown error'}'), 
-                          backgroundColor: isDark ? Colors.grey[800] : Colors.red
-                        ),
+                      CustomSnackbar.show(
+                        context: context,
+                        message: 'Gagal menghapus pembayaran',
+                        additionalInfo: respData['error'] ?? 'Unknown error',
+                        isSuccess: false,
                       );
                     }
                   }
                 } catch (e) {
                   Navigator.of(dialogContext).pop();
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error: ${e.toString()}'), 
-                        backgroundColor: isDark ? Colors.grey[800] : Colors.red
-                      ),
+                    CustomSnackbar.show(
+                      context: context,
+                      message: 'Error',
+                      additionalInfo: e.toString(),
+                      isSuccess: false,
                     );
                   }
                 }
@@ -1929,12 +1964,8 @@ class _BillingScreenState extends State<BillingScreen> {
   
   // Method to check if user has paid for the selected month
   bool _hasUserPaidForSelectedMonth(Map<String, dynamic> user) {
-    if (_showAllPayments) {
-      // If showing all payments, consider user as paid if they have any payment
-      return (user['payments'] as List).isNotEmpty;
-    }
-    
-    // Check if user has paid for the selected month
+    // Always check based on the selected month, regardless of _showAllPayments
+    // (_showAllPayments only affects what's shown in the popup, not the status card)
     return (user['payments'] as List).any((p) {
       final paymentDate = DateTime.tryParse(p['payment_date'] ?? '');
       return paymentDate != null &&

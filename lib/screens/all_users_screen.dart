@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import '../widgets/gradient_container.dart';
-import '../services/api_service.dart';
+import '../services/api_service.dart' show ApiService;
 import 'edit_data_tambahan_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../providers/mikrotik_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
+import '../providers/router_session_provider.dart';
 
 class AllUsersScreen extends StatefulWidget {
   const AllUsersScreen({Key? key}) : super(key: key);
@@ -19,6 +19,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
   bool _isLoading = true;
   String? _error;
   List<Map<String, dynamic>> _users = [];
+  int _totalCount = 0; // Total user dari database (sebelum filter search)
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _sortOption = 'Username (A-Z)';
@@ -46,25 +47,29 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
   // Fungsi baru: load users dari API PHP
   Future<void> _loadUsersFromApi() async {
     if (!mounted) return;
+    final routerId = Provider.of<RouterSessionProvider>(context, listen: false).routerId;
+    if (routerId == null) {
+      setState(() {
+        _isLoading = false;
+        _error = 'Belum login atau gagal ambil router!';
+      });
+      return;
+    }
     setState(() {
       _isLoading = true;
       _error = null;
     });
     try {
-      final data = await ApiService.getAllUsers();
+      final String routerIdValue = routerId;
+      final data = await ApiService.getAllUsers(routerId: routerIdValue);
       if (!mounted) return;
       if (data['success'] == true) {
-        // Ambil secrets dari Mikrotik
-        final provider = Provider.of<MikrotikProvider>(context, listen: false);
-        final secrets = await provider.service.getPPPSecret();
-        if (!mounted) return;
-        final secretUsernames = secrets.map((s) => s['name']).toSet();
-        final filtered = List<Map<String, dynamic>>.from(data['users'])
-            .where((u) => secretUsernames.contains(u['username']))
-            .toList();
+        // Ambil semua user dari database (tidak perlu filter berdasarkan Mikrotik)
+        // Karena data sudah disinkronkan dan di-filter berdasarkan router_id di backend
         if (mounted) {
           setState(() {
-            _users = filtered;
+            _users = List<Map<String, dynamic>>.from(data['users'] ?? []);
+            _totalCount = data['count'] as int? ?? _users.length;
             _isLoading = false;
           });
         }
@@ -230,7 +235,12 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
     if (confirm == true) {
       try {
         // Asumsikan ApiService punya deleteUser
-        await ApiService.deleteUser(user['username']);
+        final routerIdProvider = Provider.of<RouterSessionProvider>(context, listen: false);
+        final String? routerIdValue = routerIdProvider.routerId;
+        if (routerIdValue == null) {
+          throw Exception('Silakan login router ulang');
+        }
+        await ApiService.deleteUser(routerId: routerIdValue, username: user['username'] as String);
         if (mounted) {
           setState(() {
             _users.removeWhere((u) => u['username'] == user['username']);
@@ -927,7 +937,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
-                'Total User: ${_filteredUsers.length}',
+                'Total User: $_totalCount${_searchQuery.isNotEmpty ? ' (${_filteredUsers.length} ditampilkan)' : ''}',
                 style: TextStyle(
                   fontWeight: FontWeight.w500,
                   color: isDark ? Colors.white : Colors.black87,

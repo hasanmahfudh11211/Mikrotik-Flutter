@@ -17,12 +17,19 @@ if (!$data) {
 }
 
 // Ambil data dari JSON
-$username = $conn->real_escape_string($data->username ?? '');
-$password = $conn->real_escape_string($data->password ?? '');
-$profile  = $conn->real_escape_string($data->profile ?? '');
-$wa       = $conn->real_escape_string($data->wa ?? '');
-$maps     = $conn->real_escape_string($data->maps ?? '');
-$tanggal  = $conn->real_escape_string($data->tanggal_dibuat ?? '');
+$router_id = $data->router_id ?? '';
+$username = $data->username ?? '';
+$password = $data->password ?? '';
+$profile  = $data->profile ?? '';
+$wa       = $data->wa ?? '';
+$maps     = $data->maps ?? '';
+$tanggal  = $data->tanggal_dibuat ?? '';
+
+if ($router_id === '') {
+    http_response_code(400);
+    echo json_encode(["success" => false, "error" => "router_id required"]);
+    exit();
+}
 
 // Proses gambar base64 jika ada
 $fotoPath = '';
@@ -44,28 +51,28 @@ if (!empty($data->foto)) {
     }
 }
 
-// Cek apakah user sudah ada
-$checkStmt = $conn->prepare("SELECT id FROM users WHERE username = ?");
-$checkStmt->bind_param("s", $username);
+// Cek apakah user sudah ada dalam router yang sama
+$checkStmt = $conn->prepare("SELECT id FROM users WHERE username = ? AND router_id = ?");
+$checkStmt->bind_param("ss", $username, $router_id);
 $checkStmt->execute();
 $result = $checkStmt->get_result();
 
 if ($result->num_rows > 0) {
     // Update user yang sudah ada
     if (!empty($fotoPath)) {
-        $sql = "UPDATE users SET password = ?, profile = ?, wa = ?, maps = ?, tanggal_dibuat = ?, foto = ? WHERE username = ?";
+        $sql = "UPDATE users SET password = ?, profile = ?, wa = ?, maps = ?, tanggal_dibuat = ?, foto = ? WHERE username = ? AND router_id = ?";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("sssssss", $password, $profile, $wa, $maps, $tanggal, $fotoPath, $username);
+        $stmt->bind_param("ssssssss", $password, $profile, $wa, $maps, $tanggal, $fotoPath, $username, $router_id);
     } else {
-        $sql = "UPDATE users SET password = ?, profile = ?, wa = ?, maps = ?, tanggal_dibuat = ? WHERE username = ?";
+        $sql = "UPDATE users SET password = ?, profile = ?, wa = ?, maps = ?, tanggal_dibuat = ? WHERE username = ? AND router_id = ?";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("ssssss", $password, $profile, $wa, $maps, $tanggal, $username);
+        $stmt->bind_param("sssssss", $password, $profile, $wa, $maps, $tanggal, $username, $router_id);
     }
 } else {
     // Insert user baru
-    $sql = "INSERT INTO users (username, password, profile, wa, foto, maps, tanggal_dibuat) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO users (router_id, username, password, profile, wa, foto, maps, tanggal_dibuat) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("sssssss", $username, $password, $profile, $wa, $fotoPath, $maps, $tanggal);
+    $stmt->bind_param("ssssssss", $router_id, $username, $password, $profile, $wa, $fotoPath, $maps, $tanggal);
 }
 
 if ($stmt->execute()) {

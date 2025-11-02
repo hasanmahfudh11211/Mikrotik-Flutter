@@ -15,10 +15,17 @@ if (!$data) {
 }
 
 // Ambil data dari JSON
-$username = $conn->real_escape_string($data->username ?? '');
-$wa = $conn->real_escape_string($data->wa ?? '');
-$maps = $conn->real_escape_string($data->maps ?? '');
+$username = $data->username ?? '';
+$router_id = $data->router_id ?? '';
+$wa = $data->wa ?? '';
+$maps = $data->maps ?? '';
 $odp_id = isset($data->odp_id) ? (int)$data->odp_id : null;
+
+if (empty($router_id)) {
+    http_response_code(400);
+    echo json_encode(["success" => false, "error" => "router_id tidak boleh kosong"]);
+    exit();
+}
 
 // Proses gambar base64 jika ada
 $fotoPath = '';
@@ -57,9 +64,10 @@ if (!empty($fotoPath)) {
     $params[] = $fotoPath;
 }
 
-$sql .= " WHERE username = ?";
-$types .= "s";
+$sql .= " WHERE username = ? AND router_id = ?";
+$types .= "ss";
 $params[] = $username;
+$params[] = $router_id;
 
 $stmt = $conn->prepare($sql);
 $stmt->bind_param($types, ...$params);

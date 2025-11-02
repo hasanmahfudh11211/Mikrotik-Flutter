@@ -921,7 +921,10 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
           // Gabungkan secrets dan active
           final profiles = provider.pppProfiles;
           final activeMap = {for (var s in provider.pppSessions) s['name']: s};
-          final users = provider.pppSecrets.map((secret) {
+          // Konsisten dengan sinkronisasi DB: abaikan secret dengan name kosong
+          final users = provider.pppSecrets
+              .where((s) => (s['name']?.toString().trim().isNotEmpty ?? false))
+              .map((secret) {
             final session = activeMap[secret['name']];
             final profileInfo = profiles.firstWhere(
               (p) => p['name'] == secret['profile'],

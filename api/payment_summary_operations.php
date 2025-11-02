@@ -22,16 +22,22 @@ try {
     require_once __DIR__ . '/config.php';
 
     $action = isset($_GET['action']) ? $_GET['action'] : '';
+    $router_id = isset($_GET['router_id']) ? trim($_GET['router_id']) : '';
+    if ($router_id === '') { throw new Exception('router_id is required'); }
 
     // Summary: Ringkasan pembayaran per bulan/tahun
     if ($action === 'summary') {
         // Query summary pembayaran per bulan/tahun
         $sql = "SELECT payment_month, payment_year, SUM(amount) as total, COUNT(*) as count 
                 FROM payments 
+                WHERE router_id = ?
                 GROUP BY payment_year, payment_month 
                 ORDER BY payment_year DESC, payment_month DESC";
         
-        $result = $conn->query($sql);
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("s", $router_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
         
         if (!$result) {
             throw new Exception("Database error: " . $conn->error);
@@ -48,6 +54,7 @@ try {
         }
         
         echo json_encode(["success" => true, "data" => $summary]);
+        $stmt->close();
     }
     // Detail: Semua pembayaran untuk bulan/tahun tertentu
     else if ($action === 'detail') {
@@ -61,7 +68,7 @@ try {
         $sql = "SELECT p.*, u.username 
                 FROM payments p
                 LEFT JOIN users u ON p.user_id = u.id
-                WHERE p.payment_month = ? AND p.payment_year = ? 
+                WHERE p.payment_month = ? AND p.payment_year = ? AND p.router_id = ?
                 ORDER BY p.payment_date DESC";
         
         $stmt = $conn->prepare($sql);
@@ -70,7 +77,7 @@ try {
             throw new Exception("Database error: " . $conn->error);
         }
         
-        $stmt->bind_param("ii", $month, $year);
+        $stmt->bind_param("iis", $month, $year, $router_id);
         $stmt->execute();
         $result = $stmt->get_result();
         

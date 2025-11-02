@@ -6,6 +6,7 @@ import '../widgets/custom_snackbar.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../services/api_service.dart';
+import '../providers/router_session_provider.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io' show Directory, File, Platform;
 import '../data/user_db_helper.dart';
@@ -197,6 +198,84 @@ class _ExportPPPScreenState extends State<ExportPPPScreen> {
     }
   }
 
+  // Unified sync: ambil PPP dari Mikrotik, lalu upsert ke DB (insert/update), termasuk router_id
+  Future<void> _unifiedSyncToDb() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+      _totalUsers = 0;
+      _successCount = 0;
+      _failedCount = 0;
+      _failedUsers = [];
+      _currentProcess = 'sync';
+    });
+    try {
+      final provider = Provider.of<MikrotikProvider>(context, listen: false);
+      final secrets = await provider.service.getPPPSecret();
+      _totalUsers = secrets.length;
+
+      // Normalisasi data minimal untuk sinkron
+      final normalized = secrets
+          .map((s) => {
+                'name': s['name']?.toString() ?? '',
+                'password': s['password']?.toString() ?? '',
+                'profile': s['profile']?.toString() ?? '',
+              })
+          .where((u) => (u['name'] as String).isNotEmpty)
+          .toList();
+
+      // Ambil routerId aktif
+      final routerId = Provider.of<RouterSessionProvider>(context, listen: false).routerId;
+      if (routerId == null || routerId.isEmpty) {
+        throw Exception('Router belum login');
+      }
+
+      // Kirim per-batch agar aman
+      const int batchSize = 50;
+      int added = 0;
+      int updated = 0;
+      for (int i = 0; i < normalized.length; i += batchSize) {
+        final batch = normalized.sublist(i, i + batchSize > normalized.length ? normalized.length : i + batchSize);
+        try {
+          // Debug batch info
+          // ignore: avoid_print
+          print('[SYNC] Batch ${(i ~/ batchSize) + 1}/${(normalized.length / batchSize).ceil()} size=${batch.length}');
+          final res = await ApiService.syncPPPUsers(
+            routerId: routerId,
+            pppUsers: List<Map<String, dynamic>>.from(batch),
+            prune: i == 0, // hanya batch pertama yang memicu prune
+          );
+          added += (res['added'] ?? 0) as int;
+          updated += (res['updated'] ?? 0) as int;
+        } catch (e) {
+          // ignore: avoid_print
+          print('[SYNC][ERROR] Batch ${(i ~/ batchSize) + 1} failed: $e');
+          rethrow;
+        }
+      }
+
+      if (!mounted) return;
+      _successCount = added + updated;
+      CustomSnackbar.show(
+        context: context,
+        message: 'Sinkronisasi selesai',
+        additionalInfo: 'Ditambahkan: $added, Diperbarui: $updated',
+        isSuccess: true,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _error = e.toString();
+      CustomSnackbar.show(
+        context: context,
+        message: 'Sinkronisasi gagal',
+        additionalInfo: _error ?? '',
+        isSuccess: false,
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return GradientContainer(
@@ -271,8 +350,8 @@ class _ExportPPPScreenState extends State<ExportPPPScreen> {
                 ),
               ),
               ElevatedButton.icon(
-                icon: const Icon(Icons.cloud_upload),
-                label: const Text('Ekspor Semua User ke Database'),
+                icon: const Icon(Icons.sync_alt),
+                label: const Text('Sinkronkan & Perbarui Semua User ke Database'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue.shade700,
                   foregroundColor: Colors.white,
@@ -280,7 +359,7 @@ class _ExportPPPScreenState extends State<ExportPPPScreen> {
                   textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                onPressed: _isLoading ? null : _exportUsersToApi,
+                onPressed: _isLoading ? null : _unifiedSyncToDb,
               ),
               const SizedBox(height: 18),
               ElevatedButton.icon(
@@ -307,18 +386,7 @@ class _ExportPPPScreenState extends State<ExportPPPScreen> {
                 onPressed: _importFromFile,
               ),
               const SizedBox(height: 24),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.sync),
-                label: const Text('Sinkronkan Data PPP ke Database'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange.shade700,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: _isLoading ? null : _syncPPPtoDB,
-              ),
+              // Tombol sinkron khusus dihapus karena sudah digabung di atas
               const SizedBox(height: 18),
 
               // Progress Card
