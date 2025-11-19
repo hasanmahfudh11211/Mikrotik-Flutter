@@ -6,32 +6,42 @@ workflows:
       xcode: latest
       cocoapods: default
 
-      android_signing:
-        keystore: $ANDROID_KEYSTORE
-        keystore_password: $ANDROID_KEYSTORE_PASSWORD
-        key_alias: $ANDROID_KEY_ALIAS
-        key_password: $ANDROID_KEY_PASSWORD
-
     scripts:
-      - name: Install Flutter dependencies
+      - name: Install dependencies
         script: |
           flutter pub get
 
-      # ANDROID
-      - name: Build Android APK (Signed)
+      # -----------------------
+      # ANDROID SIGNED BUILDS
+      # -----------------------
+      - name: Set up Android signing
+        script: |
+          echo "storePassword=$ANDROID_KEYSTORE_PASSWORD" > android/key.properties
+          echo "keyPassword=$ANDROID_KEY_PASSWORD" >> android/key.properties
+          echo "keyAlias=$ANDROID_KEY_ALIAS" >> android/key.properties
+          echo "storeFile=key.jks" >> android/key.properties
+        ignore_failure: false
+
+      - name: Copy keystore file
+        script: |
+          cp $ANDROID_KEYSTORE android/app/key.jks
+
+      - name: Build Android APK
         script: |
           flutter build apk --release
 
-      - name: Build Android AAB (Signed)
+      - name: Build Android AAB
         script: |
           flutter build appbundle --release
 
-      # IOS UNSIGNED
+      # -----------------------
+      # IOS UNSIGNED BUILD
+      # -----------------------
       - name: Build iOS (Unsigned)
         script: |
           flutter build ios --release --no-codesign
 
-      - name: Package IPA (Unsigned)
+      - name: Package unsigned IPA
         script: |
           cd build/ios/iphoneos
           mkdir Payload
@@ -43,7 +53,7 @@ workflows:
       - build/app/outputs/flutter-apk/app-release.apk
       - build/app/outputs/bundle/release/app-release.aab
 
-      # iOS
+      # iOS unsigned
       - build/ios/iphoneos/Runner.app
       - build/ios/iphoneos/Payload
       - build/ios/iphoneos/Runner-unsigned.ipa
