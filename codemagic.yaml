@@ -5,6 +5,8 @@ workflows:
       flutter: stable
       xcode: latest
       cocoapods: default
+      groups:
+        - android-signing
 
     scripts:
       - name: Install dependencies
@@ -20,7 +22,6 @@ workflows:
           echo "keyPassword=$ANDROID_KEY_PASSWORD" >> android/key.properties
           echo "keyAlias=$ANDROID_KEY_ALIAS" >> android/key.properties
           echo "storeFile=key.jks" >> android/key.properties
-        ignore_failure: false
 
       - name: Copy keystore file
         script: |
@@ -49,11 +50,8 @@ workflows:
           zip -r Runner-unsigned.ipa Payload
 
     artifacts:
-      # Android
       - build/app/outputs/flutter-apk/app-release.apk
       - build/app/outputs/bundle/release/app-release.aab
-
-      # iOS unsigned
       - build/ios/iphoneos/Runner.app
       - build/ios/iphoneos/Payload
       - build/ios/iphoneos/Runner-unsigned.ipa
