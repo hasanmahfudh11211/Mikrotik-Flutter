@@ -6,20 +6,18 @@ workflows:
       xcode: latest
       cocoapods: default
 
-    android_signing:
-      keystore: $ANDROID_KEYSTORE
-      keystore_password: $ANDROID_KEYSTORE_PASSWORD
-      key_alias: $ANDROID_KEY_ALIAS
-      key_password: $ANDROID_KEY_PASSWORD
+      android_signing:
+        keystore: $ANDROID_KEYSTORE
+        keystore_password: $ANDROID_KEYSTORE_PASSWORD
+        key_alias: $ANDROID_KEY_ALIAS
+        key_password: $ANDROID_KEY_PASSWORD
 
     scripts:
       - name: Install Flutter dependencies
         script: |
           flutter pub get
 
-      # -----------------------------
-      # ANDROID BUILDS
-      # -----------------------------
+      # ANDROID
       - name: Build Android APK (Signed)
         script: |
           flutter build apk --release
@@ -28,9 +26,7 @@ workflows:
         script: |
           flutter build appbundle --release
 
-      # -----------------------------
-      # IOS BUILD (UNSIGNED)
-      # -----------------------------
+      # IOS UNSIGNED
       - name: Build iOS (Unsigned)
         script: |
           flutter build ios --release --no-codesign
