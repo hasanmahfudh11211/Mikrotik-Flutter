@@ -9,6 +9,12 @@ workflows:
         - android-signing
 
     scripts:
+      # Decode keystore dari BASE64 ke file .jks
+      - name: Decode keystore (Base64 → .jks)
+        script: |
+          echo "$ANDROID_KEYSTORE" | base64 --decode > android/app/key.jks
+
+      # Install dependency Flutter
       - name: Install dependencies
         script: |
           flutter pub get
@@ -22,10 +28,6 @@ workflows:
           echo "keyPassword=$ANDROID_KEY_PASSWORD" >> android/key.properties
           echo "keyAlias=$ANDROID_KEY_ALIAS" >> android/key.properties
           echo "storeFile=key.jks" >> android/key.properties
-
-      - name: Copy keystore file
-        script: |
-          cp $ANDROID_KEYSTORE android/app/key.jks
 
       - name: Build Android APK
         script: |
@@ -50,8 +52,11 @@ workflows:
           zip -r Runner-unsigned.ipa Payload
 
     artifacts:
+      # Android signed
       - build/app/outputs/flutter-apk/app-release.apk
       - build/app/outputs/bundle/release/app-release.aab
+
+      # iOS unsigned
       - build/ios/iphoneos/Runner.app
       - build/ios/iphoneos/Payload
       - build/ios/iphoneos/Runner-unsigned.ipa
