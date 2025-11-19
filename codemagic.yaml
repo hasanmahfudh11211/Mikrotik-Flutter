@@ -1,0 +1,58 @@
+workflows:
+  build-all:
+    name: Build Android Signed + iOS Unsigned
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+
+    android_signing:
+      keystore: $ANDROID_KEYSTORE
+      keystore_password: $ANDROID_KEYSTORE_PASSWORD
+      key_alias: $ANDROID_KEY_ALIAS
+      key_password: $ANDROID_KEY_PASSWORD
+
+    scripts:
+      - name: Install Flutter dependencies
+        script: |
+          flutter pub get
+
+      # -----------------------------
+      # ANDROID BUILDS
+      # -----------------------------
+      - name: Build Android APK (Signed)
+        script: |
+          flutter build apk --release
+
+      - name: Build Android AAB (Signed)
+        script: |
+          flutter build appbundle --release
+
+      # -----------------------------
+      # IOS BUILD (UNSIGNED)
+      # -----------------------------
+      - name: Build iOS (Unsigned)
+        script: |
+          flutter build ios --release --no-codesign
+
+      - name: Package IPA (Unsigned)
+        script: |
+          cd build/ios/iphoneos
+          mkdir Payload
+          cp -r Runner.app Payload/
+          zip -r Runner-unsigned.ipa Payload
+
+    artifacts:
+      # Android
+      - build/app/outputs/flutter-apk/app-release.apk
+      - build/app/outputs/bundle/release/app-release.aab
+
+      # iOS
+      - build/ios/iphoneos/Runner.app
+      - build/ios/iphoneos/Payload
+      - build/ios/iphoneos/Runner-unsigned.ipa
+
+    publishing:
+      email:
+        recipients:
+          - hasanmahfudh112@gmail.com
