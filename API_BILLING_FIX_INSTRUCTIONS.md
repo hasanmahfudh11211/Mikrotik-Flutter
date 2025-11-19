@@ -1,25 +1,20 @@
-# 🔧 Instruksi Memperbaiki API Billing Backend
+# 🔧 API Billing Documentation
 
-## 📋 Ringkasan Masalah
+## 📋 Ringkasan
 
-Aplikasi Flutter telah diperbaiki untuk menangani error dengan lebih baik. Namun, masih ada masalah di backend API yang perlu diperbaiki di server hosting `bedagung.space`.
+Aplikasi Flutter sudah menggunakan API billing endpoint yang baru dan sudah diperbaiki untuk menangani error dengan baik.
 
-## ❌ Error yang Terdeteksi
+## ✅ Endpoint yang Digunakan
 
-### 1. **Redirect Loop Error**
-```
-ClientException: Redirect loop detected, uri=admin.php?id=login
-```
+### **Payment Summary Endpoint:**
+- **File:** `api/payment_summary_operations.php`
+- **Actions:**
+  - `summary`: Ringkasan pembayaran per bulan/tahun
+  - `detail`: Detail semua pembayaran untuk bulan/tahun tertentu
 
-**Endpoint yang bermasalah:**
-- `http://bedagung.space/api/get_payment_summary.php`
-- `http://bedagung.space/api/get_all_payments_for_month_year.php`
-
-**Penyebab:**
-Server melakukan redirect ke halaman login (`admin.php?id=login`) saat mengakses API endpoint. Ini biasanya terjadi karena:
-- Ada session/authentication requirement di hosting
-- File `.htaccess` yang memaksa authentication
-- Server firewall/WAF yang block request dari mobile app
+### **Legacy Endpoints (Deprecated):**
+- `get_payment_summary.php` - TIDAK DIGUNAKAN
+- `get_all_payments_for_month_year.php` - TIDAK DIGUNAKAN
 
 ## ✅ Solusi yang Sudah Diterapkan di Flutter App
 
@@ -38,7 +33,10 @@ final List<Map<String, dynamic>> convertedData = rawData
 ### 2. **Timeout Handling** ✔️
 ```dart
 final response = await http.get(
-  Uri.parse('$baseUrl/get_payment_summary.php'),
+  Uri.parse('$baseUrl/payment_summary_operations.php').replace(queryParameters: {
+    'action': 'summary',
+    'router_id': routerId,
+  }),
   headers: {'Accept': 'application/json'},
 ).timeout(
   const Duration(seconds: 15),
@@ -46,17 +44,12 @@ final response = await http.get(
 );
 ```
 
-### 3. **Redirect Detection** ✔️
+### 3. **Type Safety** ✔️
 ```dart
-// Check for redirect responses
-if (response.statusCode == 302 || response.statusCode == 301) {
-  throw Exception('API memerlukan autentikasi. Silakan hubungi administrator.');
-}
-
-// Check if response is HTML (redirect page) instead of JSON
-if (response.body.trim().startsWith('<')) {
-  throw Exception('Server mengembalikan halaman HTML bukan data JSON.');
-}
+final List<dynamic> rawData = data['data'] as List<dynamic>;
+final List<Map<String, dynamic>> convertedData = rawData
+    .map((item) => Map<String, dynamic>.from(item as Map))
+    .toList();
 ```
 
 ### 4. **Better Error Messages** ✔️
@@ -70,89 +63,22 @@ if (e.toString().contains('SocketException')) {
 }
 ```
 
-## 🛠️ Langkah Perbaikan di Backend Server
-
-### **Opsi 1: Disable Authentication untuk API (Recommended)**
-
-Jika API tidak memerlukan authentication:
-
-1. Login ke cPanel hosting `bedagung.space`
-2. Buka File Manager → folder `api/`
-3. Cek file `.htaccess` di folder `api/`
-4. Tambahkan rule untuk bypass authentication:
-
-```apache
-# .htaccess di folder api/
-<FilesMatch "\.(php)$">
-    # Allow API access without authentication
-    Allow from all
-    Satisfy Any
-</FilesMatch>
-
-# Atau disable authentication sepenuhnya
-AuthType None
-Require all granted
-```
-
-### **Opsi 2: Tambahkan API Key Authentication**
-
-Jika perlu security:
-
-1. Edit file API untuk cek API key:
-
-**File: `api/get_payment_summary.php`** (tambahkan di line 17)
-```php
-<?php
-// ... (existing headers) ...
-
-// Simple API Key Authentication
-$api_key = isset($_SERVER['HTTP_X_API_KEY']) ? $_SERVER['HTTP_X_API_KEY'] : '';
-if ($api_key !== 'YOUR_SECRET_API_KEY_HERE') {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
-    exit();
-}
-
-// ... (rest of code) ...
-```
-
-Lalu di Flutter app, tambahkan header:
-```dart
-headers: {
-  'Accept': 'application/json',
-  'X-API-KEY': 'YOUR_SECRET_API_KEY_HERE',
-},
-```
-
-### **Opsi 3: Cek Server Configuration**
-
-Jika server punya WAF (Web Application Firewall):
-
-1. Login ke cPanel → **ModSecurity** atau **Firewall**
-2. Whitelist IP ranges untuk mobile app access
-3. Atau disable ModSecurity untuk folder `/api/`
-
 ## 📊 Testing API Endpoints
 
 ### **Cara Test Manual:**
 
 **1. Via Browser:**
 ```
-http://bedagung.space/api/get_payment_summary.php
+http://cmmnetwork.online/api/payment_summary_operations.php?action=summary&router_id=YOUR_ROUTER_ID
 ```
-Harusnya return JSON, bukan redirect ke admin.php
+Harusnya return JSON.
 
 **2. Via cURL:**
 ```bash
-curl -v http://bedagung.space/api/get_payment_summary.php
+curl "http://cmmnetwork.online/api/payment_summary_operations.php?action=summary&router_id=YOUR_ROUTER_ID"
 ```
-Cek apakah ada HTTP redirect (301/302)
 
-**3. Via Postman:**
-- Method: GET
-- URL: `http://bedagung.space/api/get_payment_summary.php`
-- Headers: `Accept: application/json`
-- Expected Response:
+**3. Expected Response:**
 ```json
 {
   "success": true,
@@ -167,14 +93,19 @@ Cek apakah ada HTTP redirect (301/302)
 }
 ```
 
-## 🔍 Debug Checklist
+## 🔍 API Implementation Details
 
-- [ ] File PHP bisa diakses langsung via browser (tanpa redirect)
-- [ ] Response adalah JSON (bukan HTML)
-- [ ] Tidak ada HTTP 301/302 redirect
-- [ ] Database connection berhasil
-- [ ] Tabel `payments` exist di database
-- [ ] Kolom `payment_month` dan `payment_year` exist di tabel
+### **Router ID Helper:**
+File `router_id_helper.php` menyediakan fungsi:
+- `requireRouterIdFromGet($conn)` - Validasi router_id dari GET parameter
+- `requireRouterIdFromBody($conn, $data)` - Validasi router_id dari POST body
+- `requireRouterId($conn, $data)` - Validasi fleksibel GET atau POST
+
+### **Security:**
+- CORS diaktifkan untuk semua origin
+- Prepared statements untuk mencegah SQL injection
+- Error handling terpusat dengan JSON response
+- Timeout 30 detik untuk mencegah long-running queries
 
 ## 📝 Database Schema Required
 
@@ -184,6 +115,7 @@ Pastikan tabel database sudah benar:
 CREATE TABLE IF NOT EXISTS `payments` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `user_id` INT NOT NULL,
+  `router_id` VARCHAR(255) NOT NULL,
   `username` VARCHAR(255),
   `amount` DECIMAL(10,2) NOT NULL,
   `payment_date` DATE NOT NULL,
@@ -192,29 +124,32 @@ CREATE TABLE IF NOT EXISTS `payments` (
   `method` VARCHAR(50) DEFAULT 'Cash',
   `note` TEXT,
   `created_by` VARCHAR(255),
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 );
 ```
 
-## 📞 Kontak Support
-
-Jika masih bermasalah, hubungi:
-- **Server Admin**: Periksa server logs di cPanel → Error Logs
-- **Developer**: Cek aplikasi Flutter sudah bisa menampilkan error dengan jelas
-
-## ✅ Status Perbaikan
+## ✅ Status Implementasi
 
 | Component | Status | Keterangan |
 |-----------|--------|------------|
-| Flutter App Type Casting | ✅ Fixed | Sudah diperbaiki |
-| Flutter Error Handling | ✅ Fixed | Sudah lebih user-friendly |
-| Flutter Timeout Handler | ✅ Fixed | Timeout 15 detik |
-| Backend API Access | ⚠️ Pending | Perlu cek di server |
-| Database Schema | ⚠️ Unknown | Perlu verifikasi |
+| API Endpoint | ✅ Complete | payment_summary_operations.php |
+| Type Casting | ✅ Fixed | Safe type conversion |
+| Error Handling | ✅ Fixed | User-friendly messages |
+| Timeout Handler | ✅ Fixed | 15 detik timeout |
+| Router ID Validation | ✅ Complete | Centralized helper |
+| Database Schema | ✅ Complete | Payments table dengan router_id |
+
+## 📞 Support
+
+Jika ada masalah:
+- Periksa error log di Flutter debug console
+- Test API endpoint langsung via browser/Postman
+- Pastikan `router_id` valid dan ada di database
 
 ---
 
-**Last Updated:** 23 Oktober 2025  
-**Version:** 1.0
+**Last Updated:** 23 November 2025  
+**Version:** 2.0
 
 

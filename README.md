@@ -14,6 +14,7 @@ Aplikasi monitoring user PPPoE Mikrotik berbasis Flutter dan REST API. Memudahka
 - **Manajemen Pembayaran**: Fitur billing untuk mencatat dan melacak pembayaran user.
 - **Manajemen ODP**: Integrasi dengan Optical Distribution Point untuk pelacakan lokasi user.
 - **Export Data**: Ekspor data user dan pembayaran ke format Excel dan PDF.
+- **Auto Update System**: System update otomatis tanpa perlu membagikan APK secara manual.
 
 ---
 
@@ -101,6 +102,8 @@ Project ini dilengkapi dengan dokumentasi lengkap:
 | **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** | Panduan lengkap deployment ke production |
 | **[SECURITY_NOTES.md](SECURITY_NOTES.md)** | Security issues & best practices |
 | **[PERBAIKAN_SUMMARY.md](PERBAIKAN_SUMMARY.md)** | Summary perbaikan yang sudah dilakukan |
+| **[AUTO_UPDATE_SETUP_GUIDE.md](AUTO_UPDATE_SETUP_GUIDE.md)** | Panduan setup auto update system |
+| **[DEPLOYMENT_AUTO_UPDATE.md](DEPLOYMENT_AUTO_UPDATE.md)** | Quick guide deployment auto update |
 | **[database_schema.sql](database_schema.sql)** | Database schema & structure |
 | **[API_BILLING_FIX_INSTRUCTIONS.md](API_BILLING_FIX_INSTRUCTIONS.md)** | Instruksi fix API billing issues |
 

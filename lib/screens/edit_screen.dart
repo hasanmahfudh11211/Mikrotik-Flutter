@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/mikrotik_provider.dart';
-import '../widgets/gradient_container.dart';
 
 class EditScreen extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -318,12 +317,12 @@ class _EditScreenState extends State<EditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return GradientContainer(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Scaffold(
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         extendBody: true,
         appBar: AppBar(
-          backgroundColor: Colors.transparent,
+          backgroundColor: Theme.of(context).primaryColor,
           elevation: 0,
           iconTheme: const IconThemeData(color: Colors.white),
           title: const Text(
@@ -491,7 +490,6 @@ class _EditScreenState extends State<EditScreen> {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 } 

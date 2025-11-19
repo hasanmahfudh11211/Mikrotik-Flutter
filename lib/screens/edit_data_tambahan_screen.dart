@@ -3,7 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import '../widgets/gradient_container.dart';
+
 import '../widgets/custom_snackbar.dart';
 import 'package:image/image.dart' as img;
 import '../services/api_service.dart';
@@ -292,9 +292,8 @@ class _EditDataTambahanScreenState extends State<EditDataTambahanScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return GradientContainer(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+    return Scaffold(
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -494,7 +493,7 @@ class _EditDataTambahanScreenState extends State<EditDataTambahanScreen> {
 
                         // Image Picker
                         Text(
-                          'Foto Lokasi',
+                          'Foto ',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -617,11 +616,10 @@ class _EditDataTambahanScreenState extends State<EditDataTambahanScreen> {
                       textAlign: TextAlign.center,
                     ),
                   ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-      ),
-    );
+      );
   }
 }

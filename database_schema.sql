@@ -176,6 +176,20 @@ UPDATE odp SET ratio_used = 5, ratio_total = 16 WHERE name = 'ODP-02';
 -- ALTER TABLE payments AUTO_INCREMENT = 1;
 
 -- =====================================================
+-- Backup Procedures
+-- =====================================================
+
+-- Buat backup users
+-- CREATE TABLE users_backup_YYYYMMDD_HHMMSS AS 
+-- SELECT *, NOW() as backup_timestamp FROM users;
+
+-- Buat backup payments
+-- CREATE TABLE payments_backup_YYYYMMDD_HHMMSS AS 
+-- SELECT p.*, u.username, NOW() as backup_timestamp 
+-- FROM payments p 
+-- LEFT JOIN users u ON p.user_id = u.id;
+
+-- =====================================================
 -- End of Schema
 -- =====================================================
 

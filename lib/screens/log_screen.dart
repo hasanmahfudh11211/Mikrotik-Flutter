@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/mikrotik_provider.dart';
-import '../widgets/gradient_container.dart';
+
 import '../main.dart';
 import 'dart:convert';
 
@@ -480,12 +480,11 @@ class _LogScreenState extends State<LogScreen> {
   Widget build(BuildContext context) {
     final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
 
-    return GradientContainer(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+    return Scaffold(
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
       appBar: AppBar(
         title: const Text('Log'),
-          backgroundColor: Colors.transparent,
+          backgroundColor: Theme.of(context).primaryColor,
           elevation: 0,
         actions: [
           IconButton(
@@ -639,7 +638,6 @@ class _LogScreenState extends State<LogScreen> {
                           },
                         ),
                       ),
-      ),
     );
   }
 }

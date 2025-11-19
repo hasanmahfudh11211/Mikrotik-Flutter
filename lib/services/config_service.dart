@@ -1,10 +1,10 @@
-import 'package:shared_preferences/shared_preferences.dart';
+  import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class ConfigService {
   static const String _baseUrlKey = 'api_base_url';
-  static const String _defaultBaseUrl = 'https://bedagung.space/api';
+  static const String _defaultBaseUrl = 'https://cmmnetwork.online/api';
 
   static Future<String> getBaseUrl() async {
     final prefs = await SharedPreferences.getInstance();
@@ -37,7 +37,8 @@ class ConfigService {
 
   static Future<Map<String, dynamic>> testConnectionDetailed({String? baseUrlOverride, Duration timeout = const Duration(seconds: 8)}) async {
     final base = normalizeBaseUrl(baseUrlOverride ?? await getBaseUrl());
-    final uri = Uri.parse('$base/get_all_users.php');
+    // Add router_id parameter for testing
+    final uri = Uri.parse('$base/get_all_users.php?router_id=test');
     final stopwatch = Stopwatch()..start();
     
     try {
@@ -105,5 +106,3 @@ class ConfigService {
     return 'Data received';
   }
 }
-
-

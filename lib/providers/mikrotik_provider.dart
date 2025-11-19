@@ -9,6 +9,7 @@ class MikrotikProvider with ChangeNotifier {
   // Data
   String? _identity;
   Map<String, dynamic>? _resource;
+  Map<String, dynamic>? _license;
   List<Map<String, dynamic>> _pppSessions = [];
   List<Map<String, dynamic>> _pppSecrets = [];
   List<Map<String, dynamic>> _pppProfiles = [];
@@ -28,6 +29,8 @@ class MikrotikProvider with ChangeNotifier {
   List<Map<String, dynamic>> get pppSessions => _pppSessions;
   List<Map<String, dynamic>> get pppSecrets => _pppSecrets;
   List<Map<String, dynamic>> get pppProfiles => _pppProfiles;
+  Map<String, dynamic>? get resource => _resource;
+  Map<String, dynamic>? get license => _license;
 
   MikrotikService get service => _service;
 
@@ -55,8 +58,6 @@ class MikrotikProvider with ChangeNotifier {
   String get totalMemory => _resource?['total-memory']?.toString() ?? 'N/A';
   String get uptime => _resource?['uptime'] ?? 'N/A';
 
-  Map<String, dynamic>? get resource => _resource;
-
   Future<void> refreshData({bool forceRefresh = false}) async {
     try {
       _isLoading = true;
@@ -73,7 +74,7 @@ class MikrotikProvider with ChangeNotifier {
         return;
       }
 
-      // Fetch all data in parallel
+      // Fetch all data in parallel (license is optional, so handle separately)
       final results = await Future.wait([
         _service.getIdentity(),
         _service.getResource(),
@@ -81,6 +82,15 @@ class MikrotikProvider with ChangeNotifier {
         _service.getPPPSecret(),
         _service.getPPPProfile(),
       ]);
+
+      // Try to fetch license separately (non-blocking)
+      Map<String, dynamic>? licenseData;
+      try {
+        licenseData = await _service.getLicense();
+      } catch (e) {
+        // License fetch failed, but continue with other data
+        print('Warning: Failed to fetch license: $e');
+      }
 
       // Cast results to correct types
       final identityData = results[0] as Map<String, dynamic>;
@@ -91,6 +101,7 @@ class MikrotikProvider with ChangeNotifier {
 
       _identity = identityData['name'] as String?;
       _resource = resourceData;
+      _license = licenseData;
       _pppSessions = pppData;
       _pppSecrets = pppSecretData;
       _pppProfiles = pppProfileData;
@@ -154,6 +165,28 @@ class MikrotikProvider with ChangeNotifier {
       if (hasListeners) notifyListeners();
     } catch (e) {
       // Optional: handle error, but don't set _isLoading/_error global state
+    }
+  }
+
+  /// Fetch only resource and identity data (for System Resource screen)
+  /// This reduces API calls from 6+ to just 2 (identity + resource)
+  Future<void> fetchResourceOnly() async {
+    try {
+      final results = await Future.wait([
+        _service.getIdentity(),
+        _service.getResource(),
+      ]);
+
+      final identityData = results[0] as Map<String, dynamic>;
+      final resourceData = results[1] as Map<String, dynamic>;
+
+      _identity = identityData['name'] as String?;
+      _resource = resourceData;
+      
+      if (hasListeners) notifyListeners();
+    } catch (e) {
+      // Optional: handle error, but don't set _isLoading/_error global state
+      print('Warning: Failed to fetch resource only: $e');
     }
   }
 }

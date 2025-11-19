@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'config_service.dart';
+import 'mikrotik_service.dart';
 
 class ApiService {
-  static String _baseUrlCache = 'https://bedagung.space/api';
+  static String _baseUrlCache = 'https://cmmnetwork.online/api';
   static String get baseUrl => _baseUrlCache;
   static Future<void> refreshBaseUrlFromStorage() async {
     _baseUrlCache = await ConfigService.getBaseUrl();
@@ -17,6 +19,10 @@ class ApiService {
   // Cache for storing fetched data
   static Map<String, dynamic> _cache = {};
   static Map<String, DateTime> _cacheTimestamps = {};
+  
+  // Cache untuk sync status per router (mencegah sync berulang)
+  static String? _lastSyncedRouterId;
+  static DateTime? _lastSyncTime;
 
   // Unified JSON decoder with HTML detection and better errors
   static dynamic _decodeJsonOrThrow(http.Response response) {
@@ -30,9 +36,7 @@ class ApiService {
     try {
       return json.decode(body);
     } on FormatException {
-      // Sertakan cuplikan body agar mudah diagnosa di debug console/UI
-      final preview = body.length > 300 ? body.substring(0, 300) + '...<truncated>' : body;
-      throw Exception('Format data tidak valid. Periksa konfigurasi API.\nPreview: ${preview.replaceAll('\n', ' ').replaceAll('\r', ' ')}');
+      return {};
     }
   }
 
@@ -192,8 +196,20 @@ class ApiService {
     required String routerId,
     required List<Map<String, dynamic>> pppUsers,
     bool prune = false,
+    bool enableLogging = false,
   }) async {
     try {
+      // Add a safety check to prevent accidental data loss
+      if (prune && pppUsers.isEmpty) {
+        throw Exception('PERINGATAN KEAMANAN: Operasi prune dibatalkan karena tidak ada data yang diterima. Ini bisa menyebabkan kehilangan data.');
+      }
+      
+      // Add confirmation for prune operations with large data deletion
+      if (prune && pppUsers.length < 10) {
+        // Only show warning if we're deleting a significant amount of data
+        // This would need to be handled in the UI layer
+      }
+      
       final baseUrl = await _getBaseUrl();
       final payload = {
         'router_id': routerId,
@@ -201,8 +217,10 @@ class ApiService {
         if (prune) 'prune': true,
       };
       // Debug request
+      if (enableLogging) {
       // ignore: avoid_print
       print('[SYNC] Sending batch: users=${pppUsers.length} to $baseUrl/sync_ppp_to_db.php');
+      }
       final response = await http.post(
         Uri.parse('$baseUrl/sync_ppp_to_db.php'),
         headers: {
@@ -212,6 +230,7 @@ class ApiService {
         body: json.encode(payload),
       );
       // Debug response - lebih detail
+      if (enableLogging) {
       final bodyPreview = response.body.length > 500 ? response.body.substring(0, 500) + '...<truncated>' : response.body;
       // ignore: avoid_print
       print('[SYNC] Response status=${response.statusCode}');
@@ -219,8 +238,10 @@ class ApiService {
       print('[SYNC] Content-Type: ${response.headers['content-type'] ?? 'unknown'}');
       // ignore: avoid_print
       print('[SYNC] Body preview: ${bodyPreview.replaceAll('\n', ' ').replaceAll('\r', ' ')}');
+      }
       
       if (response.statusCode != 200) {
+        final bodyPreview = response.body.length > 500 ? response.body.substring(0, 500) + '...<truncated>' : response.body;
         throw Exception('Sync PPP gagal: HTTP ${response.statusCode}\nBody: $bodyPreview');
       }
       final decoded = _decodeJsonOrThrow(response) as Map<String, dynamic>;
@@ -252,20 +273,21 @@ class ApiService {
       
       // Cek status code dulu
       if (response.statusCode != 200) {
-        print('[BACKFILL] HTTP ${response.statusCode}: ${response.body.substring(0, 100)}');
         return {'success': false, 'error': 'HTTP ${response.statusCode}'};
       }
       
-      final decoded = _decodeJsonOrThrow(response) as Map<String, dynamic>;
-      if (decoded['success'] == true) {
-        print('[BACKFILL] Success: ${decoded['updated']} rows updated');
+      try {
+        final decoded = json.decode(response.body) as Map<String, dynamic>;
+        if (decoded['success'] == true) {
+          return decoded;
+        }
         return decoded;
+      } on FormatException {
+        // Jika response tidak valid JSON, abaikan
+        return {'success': false, 'error': 'Invalid response'};
       }
-      print('[BACKFILL] API returned error: ${decoded['error']}');
-      return decoded;
     } catch (e) {
       // Silent fail - jangan throw exception
-      print('[BACKFILL] Silent fail (tidak menghalangi login): $e');
       return {'success': false, 'error': e.toString()};
     }
   }
@@ -449,5 +471,253 @@ class ApiService {
   static void clearCache() {
     _cache.clear();
     _cacheTimestamps.clear();
+  }
+
+  // Helper function untuk sinkronisasi PPP users dari Mikrotik ke database
+  // Dipanggil sebelum load data di halaman-halaman yang membutuhkan data dari database
+  static Future<void> syncUsersFromMikrotik({
+    required String routerId,
+    required String ip,
+    required String port,
+    required String username,
+    required String password,
+    bool enableLogging = false,
+  }) async {
+      // Cek cache: jangan sync jika sudah sync router_id ini dalam 30 detik terakhir
+    final now = DateTime.now();
+    if (_lastSyncedRouterId == routerId && 
+        _lastSyncTime != null && 
+        now.difference(_lastSyncTime!).inSeconds < 30) {
+      if (enableLogging) {
+      // ignore: avoid_print
+      print('[SYNC_HELPER] Skip sync - sudah sync baru saja (< 30 detik)');
+      }
+      return;
+    }
+    
+    try {
+      final service = MikrotikService(
+        ip: ip,
+        port: port,
+        username: username,
+        password: password,
+        enableLogging: enableLogging,
+      );
+      
+      final secrets = await service.getPPPSecret();
+      final normalized = secrets
+          .map((s) => {
+                'name': s['name']?.toString() ?? '',
+                'password': s['password']?.toString() ?? '',
+                'profile': s['profile']?.toString() ?? '',
+              })
+          .where((u) => (u['name'] as String).isNotEmpty)
+          .toList();
+      
+      if (normalized.isEmpty) return;
+      
+      // Update cache timestamp sebelum sync
+      _lastSyncedRouterId = routerId;
+      _lastSyncTime = now;
+      
+      // Kirim per batch agar payload tidak terlalu besar
+      const int batchSize = 100;
+      for (int i = 0; i < normalized.length; i += batchSize) {
+        final batch = normalized.sublist(i, i + batchSize > normalized.length ? normalized.length : i + batchSize);
+        try {
+          await syncPPPUsers(
+            routerId: routerId,
+            pppUsers: List<Map<String, dynamic>>.from(batch),
+            // PENTING: JANGAN AKTIFKAN PRUNE untuk sinkronisasi rutin karena akan menghapus data tambahan
+            prune: false, 
+            enableLogging: enableLogging,
+          );
+        } catch (e) {
+          // ignore: avoid_print
+          print('[SYNC_HELPER] Batch ${(i ~/ batchSize) + 1} gagal: $e');
+          // Lanjutkan batch berikutnya meskipun batch ini gagal
+        }
+      }
+    } catch (e) {
+      // ignore: avoid_print
+      print('[SYNC_HELPER] Sync gagal: $e');
+      // Silent fail - tidak throw exception agar tidak mengganggu load data
+    }
+  }
+
+  // =====================================================
+  // Profile Pricing Operations
+  // =====================================================
+
+  /// Get all profile pricing for a router
+  static Future<List<Map<String, dynamic>>> getProfilePricing({
+    required String routerId,
+    bool includeInactive = false,
+  }) async {
+    try {
+      final baseUrl = await _getBaseUrl();
+      final uri = Uri.parse('$baseUrl/profile_pricing_operations.php').replace(queryParameters: {
+        'router_id': routerId,
+        if (includeInactive) 'include_inactive': 'true',
+      });
+      final response = await http.get(uri);
+      if (response.statusCode == 200) {
+        final decoded = _decodeJsonOrThrow(response) as Map<String, dynamic>;
+        if (decoded['success'] == true && decoded['data'] != null) {
+          return List<Map<String, dynamic>>.from(decoded['data']);
+        }
+        return [];
+      } else {
+        throw Exception('Failed to load profile pricing');
+      }
+    } catch (e) {
+      throw _friendlyException(e);
+    }
+  }
+
+  /// Get single profile pricing by profile name
+  static Future<Map<String, dynamic>?> getProfilePricingByName({
+    required String routerId,
+    required String profileName,
+  }) async {
+    try {
+      final baseUrl = await _getBaseUrl();
+      final uri = Uri.parse('$baseUrl/profile_pricing_operations.php').replace(queryParameters: {
+        'router_id': routerId,
+        'profile_name': profileName,
+      });
+      final response = await http.get(uri);
+      if (response.statusCode == 200) {
+        final decoded = _decodeJsonOrThrow(response) as Map<String, dynamic>;
+        if (decoded['success'] == true && decoded['data'] != null) {
+          return Map<String, dynamic>.from(decoded['data']);
+        }
+        return null;
+      } else {
+        throw Exception('Failed to load profile pricing');
+      }
+    } catch (e) {
+      throw _friendlyException(e);
+    }
+  }
+
+  /// Add new profile pricing
+  static Future<Map<String, dynamic>> addProfilePricing({
+    required String routerId,
+    required String profileName,
+    required double price,
+    String? description,
+    bool isActive = true,
+  }) async {
+    try {
+      final baseUrl = await _getBaseUrl();
+      final url = '$baseUrl/profile_pricing_operations.php?router_id=$routerId&operation=add';
+      
+      if (kDebugMode) {
+        print('[ApiService] addProfilePricing URL: $url');
+        print('[ApiService] Request body: profile_name=$profileName, price=$price, description=$description');
+      }
+      
+      final requestBody = {
+        'profile_name': profileName,
+        'price': price,
+        'description': description,
+        'is_active': isActive ? 1 : 0,
+      };
+      
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(requestBody),
+      );
+      
+      if (kDebugMode) {
+        print('[ApiService] Response status: ${response.statusCode}');
+        print('[ApiService] Response body: ${response.body}');
+      }
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return _decodeJsonOrThrow(response) as Map<String, dynamic>;
+      } else {
+        final decoded = _decodeJsonOrThrow(response) as Map<String, dynamic>;
+        final errorMsg = decoded['error'] ?? 'Failed to add profile pricing (Status: ${response.statusCode})';
+        throw Exception(errorMsg);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[ApiService] addProfilePricing error: $e');
+      }
+      throw _friendlyException(e);
+    }
+  }
+
+  /// Update existing profile pricing
+  static Future<Map<String, dynamic>> updateProfilePricing({
+    required String routerId,
+    int? id,
+    String? profileName,
+    double? price,
+    String? description,
+    bool? isActive,
+  }) async {
+    try {
+      if (id == null && profileName == null) {
+        throw Exception('Either id or profileName is required');
+      }
+
+      final baseUrl = await _getBaseUrl();
+      final body = <String, dynamic>{};
+      if (id != null) body['id'] = id;
+      if (profileName != null) body['profile_name'] = profileName;
+      if (price != null) body['price'] = price;
+      if (description != null) body['description'] = description;
+      if (isActive != null) body['is_active'] = isActive ? 1 : 0;
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/profile_pricing_operations.php?router_id=$routerId&operation=update'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(body),
+      );
+      if (response.statusCode == 200) {
+        return _decodeJsonOrThrow(response) as Map<String, dynamic>;
+      } else {
+        final decoded = _decodeJsonOrThrow(response) as Map<String, dynamic>;
+        throw Exception(decoded['error'] ?? 'Failed to update profile pricing');
+      }
+    } catch (e) {
+      throw _friendlyException(e);
+    }
+  }
+
+  /// Delete profile pricing
+  static Future<Map<String, dynamic>> deleteProfilePricing({
+    required String routerId,
+    int? id,
+    String? profileName,
+  }) async {
+    try {
+      if (id == null && profileName == null) {
+        throw Exception('Either id or profileName is required');
+      }
+
+      final baseUrl = await _getBaseUrl();
+      final body = <String, dynamic>{};
+      if (id != null) body['id'] = id;
+      if (profileName != null) body['profile_name'] = profileName;
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/profile_pricing_operations.php?router_id=$routerId&operation=delete'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(body),
+      );
+      if (response.statusCode == 200) {
+        return _decodeJsonOrThrow(response) as Map<String, dynamic>;
+      } else {
+        final decoded = _decodeJsonOrThrow(response) as Map<String, dynamic>;
+        throw Exception(decoded['error'] ?? 'Failed to delete profile pricing');
+      }
+    } catch (e) {
+      throw _friendlyException(e);
+    }
   }
 }

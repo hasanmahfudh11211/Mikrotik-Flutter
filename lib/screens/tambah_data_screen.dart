@@ -3,7 +3,6 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import '../widgets/gradient_container.dart';
 import '../widgets/custom_snackbar.dart';
 import 'package:image/image.dart' as img;
 import '../services/api_service.dart';
@@ -387,22 +386,22 @@ class _TambahDataScreenState extends State<TambahDataScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return GradientContainer(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          iconTheme: const IconThemeData(color: Colors.white),
-          title: const Text(
-            'Data Tambahan',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).primaryColor,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text(
+          'Data Tambahan',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
           ),
-          centerTitle: true,
         ),
+        centerTitle: true,
+      ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Form(
@@ -494,7 +493,7 @@ class _TambahDataScreenState extends State<TambahDataScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Foto Rumah/Alat',
+                          'Foto ',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -615,8 +614,7 @@ class _TambahDataScreenState extends State<TambahDataScreen> {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildInfoRow(String label, String value) {

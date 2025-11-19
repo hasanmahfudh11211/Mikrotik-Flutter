@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../widgets/gradient_container.dart';
 import 'package:provider/provider.dart';
 import '../providers/mikrotik_provider.dart';
+import '../widgets/gradient_container.dart';
 
 class TrafficScreen extends StatefulWidget {
   const TrafficScreen({Key? key}) : super(key: key);
@@ -93,17 +93,17 @@ class _TrafficScreenState extends State<TrafficScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return GradientContainer(
       child: Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        title: const Text('Traffic Monitor'),
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: const Text('Traffic Monitor'),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          titleTextStyle: TextStyle(
-            color: isDark ? Colors.white : Colors.black87,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
+        elevation: 0,
+        titleTextStyle: TextStyle(
+          color: isDark ? Colors.white : const Color.fromARGB(255, 255, 255, 255),
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
         ),
+      ),
         body: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(16),

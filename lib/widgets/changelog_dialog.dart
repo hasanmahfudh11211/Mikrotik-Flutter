@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import '../constants/changelog.dart';
 import '../main.dart';
-import '../data/changelog_data.dart';
 
 class ChangelogDialog extends StatelessWidget {
   const ChangelogDialog({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
+    final themeProvider = Provider.of<ThemeProvider>(context);
     
     return Dialog(
-      backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+      backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
@@ -31,19 +31,19 @@ class ChangelogDialog extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : Colors.black87,
+                    color: themeProvider.isDarkMode ? Colors.white : Colors.black87,
                   ),
                 ),
                 IconButton(
                   icon: Icon(
                     Icons.close,
-                    color: isDark ? Colors.white70 : Colors.black54,
+                    color: themeProvider.isDarkMode ? Colors.white70 : Colors.black54,
                   ),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
             ),
-            Divider(color: isDark ? Colors.white24 : Colors.black12),
+            Divider(color: themeProvider.isDarkMode ? Colors.white24 : Colors.black12),
             Flexible(
               child: Markdown(
                 data: changelogContent,
@@ -51,37 +51,37 @@ class ChangelogDialog extends StatelessWidget {
                   h1: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : Colors.black87,
+                    color: themeProvider.isDarkMode ? Colors.white : Colors.black87,
                   ),
                   h2: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : Colors.black87,
+                    color: themeProvider.isDarkMode ? Colors.white : Colors.black87,
                   ),
                   h3: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : Colors.black87,
+                    color: themeProvider.isDarkMode ? Colors.white : Colors.black87,
                   ),
                   p: TextStyle(
                     fontSize: 14,
-                    color: isDark ? Colors.white70 : Colors.black87,
+                    color: themeProvider.isDarkMode ? Colors.white70 : Colors.black87,
                     height: 1.5,
                   ),
                   listBullet: TextStyle(
-                    color: isDark ? Colors.white70 : Colors.black87,
+                    color: themeProvider.isDarkMode ? Colors.white70 : Colors.black87,
                   ),
                   strong: TextStyle(
-                    color: isDark ? Colors.white : Colors.black87,
+                    color: themeProvider.isDarkMode ? Colors.white : Colors.black87,
                     fontWeight: FontWeight.bold,
                   ),
                   code: TextStyle(
-                    color: isDark ? Colors.blue[200] : Colors.blue[700],
-                    backgroundColor: isDark ? Colors.black26 : Colors.blue[50],
+                    color: themeProvider.isDarkMode ? Colors.blue[200] : Colors.blue[700],
+                    backgroundColor: themeProvider.isDarkMode ? Colors.black26 : Colors.blue[50],
                     fontSize: 14,
                   ),
                   blockquote: TextStyle(
-                    color: isDark ? Colors.white70 : Colors.black87,
+                    color: themeProvider.isDarkMode ? Colors.white70 : Colors.black87,
                     fontSize: 14,
                     fontStyle: FontStyle.italic,
                   ),
@@ -99,4 +99,4 @@ class ChangelogDialog extends StatelessWidget {
       ),
     );
   }
-} 
+}

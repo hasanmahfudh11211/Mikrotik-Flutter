@@ -15,10 +15,13 @@ import 'screens/all_users_screen.dart';
 import 'screens/export_ppp_screen.dart';
 import 'screens/odp_screen.dart';
 import 'screens/billing_screen.dart';
+import 'screens/genieacs_screen.dart';
+// import 'screens/changelog_screen.dart'; // Remove this import
 import 'services/mikrotik_service.dart';
 import 'providers/mikrotik_provider.dart';
 import 'providers/router_session_provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'services/scheduled_backup_service.dart';
 
 // Reusable widget to eliminate code duplication
 class MikrotikScreenWrapper extends StatelessWidget {
@@ -80,6 +83,10 @@ class ThemeProvider with ChangeNotifier {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('id_ID', null);
+  
+  // Initialize scheduled backups
+  ScheduledBackupService().initializeScheduledBackups();
+  
   runApp(const MyApp());
 }
 
@@ -102,8 +109,8 @@ class MyApp extends StatelessWidget {
                 seedColor: Colors.blue,
                 brightness: Brightness.light,
               ),
-              cardColor: Colors.white,
-              scaffoldBackgroundColor: Colors.white,
+              cardColor: Color(0xFFE3F2FD),
+              scaffoldBackgroundColor: Color(0xFFE3F2FD),
               appBarTheme: const AppBarTheme(
                 backgroundColor: Colors.transparent,
                 iconTheme: IconThemeData(color: Colors.white),
@@ -127,6 +134,9 @@ class MyApp extends StatelessWidget {
                 iconColor: Colors.blue,
                 textColor: Colors.black87,
                 subtitleTextStyle: TextStyle(color: Colors.black54),
+              ),
+              cardTheme: const CardThemeData(
+                color: Color(0xFFE3F2FD),
               ),
               useMaterial3: true,
             ),
@@ -216,8 +226,29 @@ class MyApp extends StatelessWidget {
             ),
         '/odp': (context) => const ODPScreen(),
         '/billing': (context) => const BillingScreen(), // Ganti userId sesuai kebutuhan
+        '/genieacs': (context) => const MikrotikScreenWrapper(
+              child: GenieACSScreen(),
+            ),
+        // '/changelog': (context) => const MikrotikScreenWrapper(
+        //       child: ChangelogScreen(),
+        //     ), // Remove this route
+        // '/backup-management': (context) => const MikrotikScreenWrapper(
+        //       child: BackupManagementScreen(),
+        //     ), // Remove this route
       },
+      onGenerateRoute: (settings) {
+        if (settings.name == '/secrets-active') {
+          return MaterialPageRoute(
+            builder: (context) => const MikrotikScreenWrapper(
+              child: SecretsActiveScreen(),
+            ),
+            settings: settings,
           );
+        }
+        return null;
+      },
+
+    );
         },
       ),
     );

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../widgets/gradient_container.dart';
+
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
@@ -9,6 +9,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import '../services/api_service.dart';
 import '../providers/router_session_provider.dart';
+import '../widgets/gradient_container.dart';
 
 class ODPScreen extends StatefulWidget {
   const ODPScreen({Key? key}) : super(key: key);
@@ -46,10 +47,14 @@ class _ODPScreenState extends State<ODPScreen> {
     setState(() => _isLoading = true);
     try {
       // Get router_id from RouterSessionProvider
-      final routerId = Provider.of<RouterSessionProvider>(context, listen: false).routerId;
+      final routerSession = Provider.of<RouterSessionProvider>(context, listen: false);
+      final routerId = routerSession.routerId;
       if (routerId == null || routerId.isEmpty) {
         throw Exception('Router belum login. Silakan login dulu.');
       }
+
+      // Sinkronisasi sekarang dilakukan di background saat dashboard dibuka
+      // Langsung ambil data dari database
 
       final response = await http.get(
         Uri.parse('${ApiService.baseUrl}/odp_operations.php?router_id=$routerId'),

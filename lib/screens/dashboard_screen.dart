@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/mikrotik_provider.dart';
 import '../services/mikrotik_service.dart';
+import '../services/api_service.dart';
+import '../providers/router_session_provider.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/gradient_container.dart';
@@ -50,6 +52,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _provider.addListener(_providerListener);
     // Inisialisasi nilai awal
     _providerListener();
+    
+    // Trigger sync ke database di background saat dashboard dibuka
+    _triggerBackgroundSync();
+    
     // Reduced timer frequency to prevent battery drain and memory leaks
     _timer = Timer.periodic(const Duration(seconds: 1), (_) async {
       if (!mounted) return;
@@ -71,6 +77,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (!mounted) return;
       await _provider.fetchPPPStatusOnly();
     });
+  }
+  
+  Future<void> _triggerBackgroundSync() async {
+    final routerSession = Provider.of<RouterSessionProvider>(context, listen: false);
+    final routerId = routerSession.routerId;
+    if (routerId != null && routerSession.ip != null && routerSession.port != null && 
+        routerSession.username != null && routerSession.password != null) {
+      // ignore: unawaited_futures
+      ApiService.syncUsersFromMikrotik(
+        routerId: routerId,
+        ip: routerSession.ip!,
+        port: routerSession.port!,
+        username: routerSession.username!,
+        password: routerSession.password!,
+        enableLogging: true, // Enable logging hanya di dashboard
+      );
+    }
   }
 
   Future<void> _loadUsername() async {
@@ -381,6 +404,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 });
                               },
                             ),
+                            ListTile(
+                              leading: const Icon(Icons.cloud),
+                              title: const Text('GenieACS'),
+                              onTap: () {
+                                Navigator.of(context).pop();
+                                Future.delayed(const Duration(milliseconds: 250), () {
+                                  Navigator.of(context, rootNavigator: true).pushNamed('/genieacs');
+                                });
+                              },
+                            ),
                           ],
                         ),
                       ],
@@ -439,69 +472,74 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     children: [
                       // HEADER DENGAN GRADIENT DAN ICON
-                      Container(
-                        width: double.infinity,
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF1976D2), Color(0xFF42A5F5)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(identity,
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 10),
-                            Row(children: [
-                              const Icon(Icons.developer_board, color: Colors.white70, size: 18),
-                              const SizedBox(width: 6),
-                              Text('Board Name : $boardName',
-                                  style: const TextStyle(
-                                      color: Colors.white70, fontSize: 14)),
-                            ]),
-                            const SizedBox(height: 2),
-                            Row(children: [
-                              const Icon(Icons.router, color: Colors.white70, size: 18),
-                              const SizedBox(width: 6),
-                              Text('RouterOS : $version',
-                                  style: const TextStyle(
-                                      color: Colors.white70, fontSize: 14)),
-                            ]),
-                            const SizedBox(height: 2),
-                            Row(children: [
-                              const Icon(Icons.memory, color: Colors.white70, size: 18),
-                              const SizedBox(width: 6),
-                              Text('Model : $model',
-                                  style: const TextStyle(
-                                      color: Colors.white70, fontSize: 14)),
-                            ]),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                const Icon(Icons.access_time,
-                                    color: Colors.white70, size: 18),
-                                const SizedBox(width: 6),
-                                Text('Uptime: $_uptimeDisplay',
-                                    style: const TextStyle(
-                                        color: Colors.white70, fontSize: 14)),
-                                const SizedBox(width: 18),
-                                const Icon(Icons.speed,
-                                    color: Colors.white70, size: 18),
-                                const SizedBox(width: 6),
-                                Text('CPU: $_cpuLoad%',
-                                    style: const TextStyle(
-                                        color: Colors.white70, fontSize: 14)),
-                              ],
+                      InkWell(
+                        onTap: () {
+                          Navigator.pushNamed(context, '/system-resource');
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding:
+                              const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF1976D2), Color(0xFF42A5F5)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
-                          ],
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(identity,
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 10),
+                              Row(children: [
+                                const Icon(Icons.developer_board, color: Colors.white70, size: 18),
+                                const SizedBox(width: 6),
+                                Text('Board Name : $boardName',
+                                    style: const TextStyle(
+                                        color: Colors.white70, fontSize: 14)),
+                              ]),
+                              const SizedBox(height: 2),
+                              Row(children: [
+                                const Icon(Icons.router, color: Colors.white70, size: 18),
+                                const SizedBox(width: 6),
+                                Text('RouterOS : $version',
+                                    style: const TextStyle(
+                                        color: Colors.white70, fontSize: 14)),
+                              ]),
+                              const SizedBox(height: 2),
+                              Row(children: [
+                                const Icon(Icons.memory, color: Colors.white70, size: 18),
+                                const SizedBox(width: 6),
+                                Text('Model : $model',
+                                    style: const TextStyle(
+                                        color: Colors.white70, fontSize: 14)),
+                              ]),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  const Icon(Icons.access_time,
+                                      color: Colors.white70, size: 18),
+                                  const SizedBox(width: 6),
+                                  Text('Uptime: $_uptimeDisplay',
+                                      style: const TextStyle(
+                                          color: Colors.white70, fontSize: 14)),
+                                  const SizedBox(width: 18),
+                                  const Icon(Icons.speed,
+                                      color: Colors.white70, size: 18),
+                                  const SizedBox(width: 6),
+                                  Text('CPU: $_cpuLoad%',
+                                      style: const TextStyle(
+                                          color: Colors.white70, fontSize: 14)),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -522,7 +560,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       'Active',
                                       _isStatsVisible ? provider.pppSessions.length : -1,
                                       Colors.blue, 
-                                      '/secrets-active'
+                                      '/secrets-active',
+                                      statusFilter: 'Online',
+                                      sortOption: 'Uptime (Shortest)',
                                     ),
                                   ),
                                 ),
@@ -536,7 +576,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       'Offline',
                                       _isStatsVisible ? provider.totalOfflineUsers : -1,
                                       Colors.red, 
-                                      '/secrets-active'
+                                      '/secrets-active',
+                                      statusFilter: 'Offline',
+                                      sortOption: 'Last Logout (Newest)',
                                     ),
                                   ),
                                 ),
@@ -559,14 +601,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 BottomNavigationBarItem(
                     icon: Icon(Icons.dashboard), label: 'Dashboard'),
                 BottomNavigationBarItem(icon: Icon(Icons.add), label: 'Tambah'),
-                BottomNavigationBarItem(icon: Icon(Icons.vpn_key), label: 'PPP'),
+                BottomNavigationBarItem(icon: Icon(Icons.vpn_key), label: 'Profile'),
                 BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Setting'),
               ],
               onTap: (index) {
                 if (index == 1) {
                   Navigator.pushNamed(context, '/tambah');
                 } else if (index == 2) {
-                  Navigator.pushNamed(context, '/secrets-active');
+                  Navigator.pushNamed(context, '/ppp-profile');
                 } else if (index == 3) {
                   Navigator.pushNamed(context, '/setting');
                 }
@@ -580,9 +622,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 
   Widget _statGridBox(BuildContext context, IconData icon, String label,
-      int value, Color color, String route) {
+      int value, Color color, String route, {String? statusFilter, String? sortOption}) {
     return InkWell(
-      onTap: () => Navigator.pushNamed(context, route),
+      onTap: () {
+        if (route == '/secrets-active') {
+          Navigator.pushNamed(
+            context, 
+            route,
+            arguments: {
+              'statusFilter': statusFilter,
+              'sortOption': sortOption,
+            },
+          );
+        } else {
+          Navigator.pushNamed(context, route);
+        }
+      },
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(

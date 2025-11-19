@@ -1,16 +1,31 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'dart:io';
+import 'dart:async';
 
 class MikrotikService {
   String? ip;
   String? port;
   String? username;
   String? password;
+  bool enableLogging;
 
-  MikrotikService({this.ip, this.port, this.username, this.password});
+  MikrotikService({
+    this.ip, 
+    this.port, 
+    this.username, 
+    this.password,
+    this.enableLogging = false,
+  });
 
-  String get baseUrl => 'http://$ip:$port/rest';
+  // Automatically detect protocol based on port
+  // Port 443 = HTTPS, others = HTTP
+  String get _protocol {
+    final portNum = int.tryParse(port ?? '');
+    return (portNum == 443) ? 'https' : 'http';
+  }
+
+  String get baseUrl => '$_protocol://$ip:$port/rest';
 
   Map<String, String> get _headers {
     if (username == null || password == null || username!.isEmpty) {
@@ -35,9 +50,12 @@ class MikrotikService {
       final socket = await Socket.connect(host, p, timeout: const Duration(seconds: 3));
       await socket.close();
     } on SocketException {
+      final protocol = _protocol;
       throw Exception(
         'Tidak dapat terhubung ke $host:$p (TCP)\n\n'
-        'Periksa bahwa layanan Web (www) di router aktif dan port dapat diakses.'
+        'Periksa bahwa layanan Web di router aktif:\n'
+        '• ${protocol == 'https' ? 'www-ssl (Port 443) untuk HTTPS' : 'www (Port 80) untuk HTTP'}\n'
+        '• Pastikan port dapat diakses dari perangkat Anda'
       );
     }
   }
@@ -64,6 +82,7 @@ class MikrotikService {
   }
 
   void _logBlock(String title, Map<String, String> rows) {
+    if (!enableLogging) return;
     final border = '=' * (12 + title.length);
     print('[MKT] $border');
     print('[MKT] >>> $title');
@@ -302,18 +321,24 @@ class MikrotikService {
             '3. Aktifkan API service di router\n'
             '4. Periksa pengaturan firewall'
           );
-        } else if (message.contains('HandshakeException')) {
+        } else if (message.contains('HandshakeException') || 
+                   message.contains('CertificateException')) {
+          final protocol = _protocol;
           throw Exception(
             'Koneksi Tidak Aman\n\n'
             'Terjadi masalah keamanan koneksi\n\n'
             'Kemungkinan penyebab:\n'
-            '• Menggunakan HTTPS pada port HTTP\n'
+            '• Sertifikat SSL tidak valid atau self-signed\n'
             '• Port yang dimasukkan salah\n'
-            '• Masalah sertifikat SSL\n\n'
+            '• Service www-ssl tidak aktif di router\n\n'
+            'Detail:\n'
+            '• Protokol: ${protocol.toUpperCase()}\n'
+            '• Port: ${port ?? ""}\n\n'
             'Solusi:\n'
-            '1. Gunakan protokol HTTP\n'
-            '2. Periksa nomor port\n'
-            '3. Periksa pengaturan SSL di router'
+            '1. Aktifkan service www-ssl di router (Port 443)\n'
+            '2. Pastikan sertifikat SSL sudah dikonfigurasi\n'
+            '3. Jika menggunakan self-signed certificate, pastikan Anda mempercayainya\n'
+            '4. Atau gunakan HTTP dengan port 80 jika HTTPS tidak diperlukan'
           );
         }
         throw Exception(_formatErrorMessage(message));
@@ -642,6 +667,91 @@ class MikrotikService {
       throw Exception('Invalid response format');
     } else {
       throw Exception('Failed to fetch traffic data: ${response.body}');
+    }
+  }
+
+  /// Get system users from Mikrotik
+  /// This endpoint provides user information including groups/roles
+  /// Note: This endpoint may not be available on all devices/firmware versions
+  Future<List<Map<String, dynamic>>> getSystemUsers() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/system/user'),
+        headers: _headers,
+      ).timeout(const Duration(seconds: 10));
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is List) {
+          return data.map((item) => item as Map<String, dynamic>).toList();
+        } else {
+          return [];
+        }
+      } else if (response.statusCode == 400) {
+        // Handle case where endpoint is not available
+        throw Exception('Endpoint not available: /system/user - This endpoint may not be supported on your device/firmware version');
+      } else {
+        throw Exception('Failed to fetch system users: Status ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      if (e is SocketException) {
+        throw Exception('Network error: Could not connect to the device');
+      } else if (e is TimeoutException) {
+        throw Exception('Timeout: The device did not respond in time');
+      }
+      throw Exception('Error fetching system users: $e');
+    }
+  }
+
+  /// Get system user groups from Mikrotik
+  /// This endpoint provides group/role information for users
+  /// Note: This endpoint may not be available on all devices/firmware versions
+  Future<List<Map<String, dynamic>>> getSystemUserGroups() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/system/user/group'),
+        headers: _headers,
+      ).timeout(const Duration(seconds: 10));
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is List) {
+          return data.map((item) => item as Map<String, dynamic>).toList();
+        } else {
+          return [];
+        }
+      } else if (response.statusCode == 400) {
+        // Handle case where endpoint is not available
+        throw Exception('Endpoint not available: /system/user/group - This endpoint may not be supported on your device/firmware version');
+      } else {
+        throw Exception('Failed to fetch system user groups: Status ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      if (e is SocketException) {
+        throw Exception('Network error: Could not connect to the device');
+      } else if (e is TimeoutException) {
+        throw Exception('Timeout: The device did not respond in time');
+      }
+      throw Exception('Error fetching system user groups: $e');
+    }
+  }
+  
+  /// Fallback method to get user group from PPP secrets if system/user endpoint is not available
+  Future<String> getUserGroupFromPPPSecret(String username) async {
+    try {
+      final secrets = await getPPPSecret();
+      final userSecret = secrets.firstWhere(
+        (secret) => secret['name'] != null && secret['name'].toString() == username,
+        orElse: () => {},
+      );
+      
+      if (userSecret.isNotEmpty) {
+        return userSecret['profile']?.toString() ?? 'No profile assigned';
+      } else {
+        return 'User not found';
+      }
+    } catch (e) {
+      throw Exception('Error fetching user group from PPP secret: $e');
     }
   }
 }

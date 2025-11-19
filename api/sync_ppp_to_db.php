@@ -22,6 +22,20 @@ function returnError($error, $httpCode = 500) {
     exit();
 }
 
+// Function untuk membuat backup tabel users
+function createUsersBackup($conn, $router_id) {
+    $backup_table = "users_backup_" . date('Ymd_His');
+    $sql = "CREATE TABLE $backup_table AS SELECT * FROM users WHERE router_id = ?";
+    $stmt = $conn->prepare($sql);
+    if ($stmt) {
+        $stmt->bind_param("s", $router_id);
+        $result = $stmt->execute();
+        $stmt->close();
+        return $result ? $backup_table : false;
+    }
+    return false;
+}
+
 // Set headers
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
@@ -73,6 +87,35 @@ try {
         returnError("router_id required", 400);
     }
 
+    // Keamanan: Cek jika prune diaktifkan tapi data kosong
+    $doPrune = isset($data['prune']) ? (bool)$data['prune'] : false;
+    if ($doPrune && (empty($data['ppp_users']) || count($data['ppp_users']) == 0)) {
+        returnError("PERINGATAN KEAMANAN: Operasi prune dibatalkan karena tidak ada data yang diterima. Ini bisa menyebabkan kehilangan data.", 400);
+    }
+
+    // Keamanan: Cek jika prune diaktifkan dan data yang diterima sangat sedikit
+    if ($doPrune && count($data['ppp_users']) < 5) {
+        // Hitung total user yang ada saat ini untuk router_id ini
+        $countStmt = $conn->prepare("SELECT COUNT(*) as total FROM users WHERE router_id = ?");
+        $countStmt->bind_param("s", $router_id);
+        $countStmt->execute();
+        $countResult = $countStmt->get_result();
+        $currentCount = 0;
+        if ($row = $countResult->fetch_assoc()) {
+            $currentCount = (int)$row['total'];
+        }
+        $countStmt->close();
+        
+        // Jika akan menghapus lebih dari 80% data, beri peringatan
+        if ($currentCount > 10 && count($data['ppp_users']) < ($currentCount * 0.2)) {
+            // Buat backup sebelum melakukan prune yang berpotensi menghapus banyak data
+            $backup_table = createUsersBackup($conn, $router_id);
+            error_log("SYNC_WARNING: Backup dibuat di tabel $backup_table sebelum prune besar-besaran.");
+            
+            returnError("PERINGATAN KEAMANAN: Operasi prune dibatalkan karena akan menghapus terlalu banyak data (" . ($currentCount - count($data['ppp_users'])) . " dari $currentCount user). Backup dibuat di tabel: $backup_table", 400);
+        }
+    }
+
     $added = 0;
     $updated = 0;
     $skipped = 0; // jumlah data dilewati (mis. username kosong)
@@ -102,22 +145,41 @@ try {
             // Simpan ke list incoming untuk kemungkinan prune (gunakan username asli, sebelum escape)
             if (!empty($username)) { $incomingUsernames[] = $username; }
 
-            // Strategi anti-borost auto_increment: UPDATE dulu, INSERT jika belum ada
-            // 1) Coba UPDATE berdasarkan (router_id, username)
-            $updateStmt = $conn->prepare("UPDATE users SET password = ?, profile = ?, updated_at = NOW() WHERE router_id = ? AND username = ?");
-            if (!$updateStmt) {
-                $errors[] = "Prepare UPDATE gagal untuk '$username': " . $conn->error;
+            // Strategi: UPDATE hanya field yang diterima dari Mikrotik, pertahankan field lainnya yang sudah ada
+            // 1) Cek apakah user sudah ada
+            $checkStmt = $conn->prepare("SELECT id, wa, maps, foto, tanggal_dibuat FROM users WHERE router_id = ? AND username = ?");
+            if (!$checkStmt) {
+                $errors[] = "Prepare SELECT gagal untuk '$username': " . $conn->error;
                 continue;
             }
-            $updateStmt->bind_param("ssss", $password, $profile, $router_id, $username);
-            $updateStmt->execute();
-            $affected = $updateStmt->affected_rows;
-            $updateStmt->close();
-
-            if ($affected > 0) {
+            $checkStmt->bind_param("ss", $router_id, $username);
+            $checkStmt->execute();
+            $checkResult = $checkStmt->get_result();
+            
+            if ($checkResult->num_rows > 0) {
+                // User sudah ada, ambil data tambahan yang sudah dimasukkan sebelumnya
+                $existingUser = $checkResult->fetch_assoc();
+                $checkStmt->close();
+                
+                // Gunakan data tambahan yang sudah ada (WhatsApp, maps, foto, tanggal_dibuat)
+                $wa = $existingUser['wa'];
+                $maps = $existingUser['maps'];
+                $foto = $existingUser['foto'];
+                $tanggal_dibuat = $existingUser['tanggal_dibuat'];
+                
+                // Update hanya field dasar dari Mikrotik, PERTAHANKAN field tambahan yang sudah ada
+                $updateStmt = $conn->prepare("UPDATE users SET password = ?, profile = ?, wa = ?, maps = ?, foto = ?, tanggal_dibuat = ?, updated_at = NOW() WHERE router_id = ? AND username = ?");
+                if (!$updateStmt) {
+                    $errors[] = "Prepare UPDATE gagal untuk '$username': " . $conn->error;
+                    continue;
+                }
+                $updateStmt->bind_param("ssssssss", $password, $profile, $wa, $maps, $foto, $tanggal_dibuat, $router_id, $username);
+                $updateStmt->execute();
                 $updated++;
+                $updateStmt->close();
             } else {
-                // 2) Tidak ada row yang ter-update → lakukan INSERT (baris baru)
+                // 2) User baru, lakukan INSERT dengan data dasar dari Mikrotik
+                $checkStmt->close();
                 $insertStmt = $conn->prepare("INSERT INTO users (router_id, username, password, profile, wa, maps, foto, tanggal_dibuat) VALUES (?, ?, ?, ?, '', '', '', NOW())");
                 if (!$insertStmt) {
                     $errors[] = "Prepare INSERT gagal untuk '$username': " . $conn->error;
@@ -127,12 +189,29 @@ try {
                 if ($insertStmt->execute()) {
                     $added++;
                 } else if ($insertStmt->errno == 1062) {
-                    // Balapan antar request: sudah ada barisnya → update sekali lagi
-                    $retry = $conn->prepare("UPDATE users SET password = ?, profile = ?, updated_at = NOW() WHERE router_id = ? AND username = ?");
+                    // Balapan antar request: sudah ada barisnya → update sekali lagi dengan mempertahankan data tambahan
+                    $retry = $conn->prepare("SELECT wa, maps, foto, tanggal_dibuat FROM users WHERE router_id = ? AND username = ?");
                     if ($retry) {
-                        $retry->bind_param("ssss", $password, $profile, $router_id, $username);
-                        if ($retry->execute() && $retry->affected_rows >= 0) {
-                            $updated++;
+                        $retry->bind_param("ss", $router_id, $username);
+                        if ($retry->execute()) {
+                            $retryResult = $retry->get_result();
+                            if ($retryResult->num_rows > 0) {
+                                $existingUser = $retryResult->fetch_assoc();
+                                $wa = $existingUser['wa'];
+                                $maps = $existingUser['maps'];
+                                $foto = $existingUser['foto'];
+                                $tanggal_dibuat = $existingUser['tanggal_dibuat'];
+                                
+                                // Update dengan mempertahankan data tambahan
+                                $updateRetry = $conn->prepare("UPDATE users SET password = ?, profile = ?, wa = ?, maps = ?, foto = ?, tanggal_dibuat = ?, updated_at = NOW() WHERE router_id = ? AND username = ?");
+                                if ($updateRetry) {
+                                    $updateRetry->bind_param("ssssssss", $password, $profile, $wa, $maps, $foto, $tanggal_dibuat, $router_id, $username);
+                                    if ($updateRetry->execute()) {
+                                        $updated++;
+                                    }
+                                    $updateRetry->close();
+                                }
+                            }
                         }
                         $retry->close();
                     }
@@ -141,6 +220,7 @@ try {
                 }
                 $insertStmt->close();
             }
+
         } catch (Exception $e) {
             $errors[] = "Error processing user at index $index: " . $e->getMessage();
             error_log("SYNC_ERROR: Index $index - " . $e->getMessage());
@@ -149,14 +229,41 @@ try {
     }
 
     // Opsional: hapus data users yang TIDAK ada di daftar PPP saat ini (untuk router_id ini saja)
-    $doPrune = isset($data['prune']) ? (bool)$data['prune'] : false;
     if ($doPrune) {
         // Jika tidak ada user yang masuk, jangan hapus semua; abaikan
         if (count($incomingUsernames) > 0) {
+            // Sebelum prune, buat backup untuk keamanan
+            $backup_table = createUsersBackup($conn, $router_id);
+            error_log("SYNC_INFO: Backup dibuat di tabel $backup_table sebelum prune.");
+            
             // Hapus dalam batch agar query tidak terlalu panjang
             $batchSize = 200;
             // Buat set unik untuk menghindari duplikasi
             $incomingUsernames = array_values(array_unique($incomingUsernames));
+            
+            // Dapatkan daftar user_id yang akan dihapus (untuk logging)
+            $placeholders = str_repeat('?,', count($incomingUsernames) - 1) . '?';
+            $sql = "SELECT id, username FROM users WHERE router_id = ? AND username NOT IN ($placeholders)";
+            $stmt = $conn->prepare($sql);
+            if ($stmt) {
+                $params = array_merge([$router_id], $incomingUsernames);
+                $types = str_repeat('s', count($params));
+                $stmt->bind_param($types, ...$params);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $usersToBeDeleted = [];
+                while ($row = $result->fetch_assoc()) {
+                    $usersToBeDeleted[] = $row;
+                }
+                $stmt->close();
+                
+                // Log informasi penghapusan
+                error_log("SYNC_INFO: Akan menghapus " . count($usersToBeDeleted) . " user untuk router_id $router_id");
+                foreach ($usersToBeDeleted as $user) {
+                    error_log("SYNC_INFO: Menghapus user ID {$user['id']}: {$user['username']}");
+                }
+            }
+            
             // Siapkan placeholder untuk NOT IN
             for ($i = 0; $i < count($incomingUsernames); $i += $batchSize) {
                 $batch = array_slice($incomingUsernames, $i, $batchSize);

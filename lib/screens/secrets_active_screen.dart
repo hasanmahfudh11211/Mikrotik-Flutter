@@ -6,10 +6,11 @@ import '../providers/mikrotik_provider.dart';
 import '../services/mikrotik_service.dart';
 import '../widgets/gradient_container.dart';
 import '../screens/edit_screen.dart';
+import 'package:flutter/widgets.dart';
 
 class SecretsActiveScreen extends StatefulWidget {
   const SecretsActiveScreen({Key? key}) : super(key: key);
-
+ 
   @override
   State<SecretsActiveScreen> createState() => _SecretsActiveScreenState();
 }
@@ -22,11 +23,14 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
   String _searchQuery = '';
   String _sortOption = 'Uptime (Shortest)';
   String _statusFilter = 'Semua';
+  bool _processedDashboardArgs = false; // Add this flag
   final List<String> _sortOptions = [
     'Name (A-Z)',
     'Name (Z-A)',
     'Uptime (Longest)',
     'Uptime (Shortest)',
+    'Last Logout (Newest)',
+    'Last Logout (Oldest)',
     'IP Address (A-Z)',
     'IP Address (Z-A)',
   ];
@@ -73,6 +77,24 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Check for route arguments only once
+    if (!_processedDashboardArgs) {
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      if (args != null) {
+        setState(() {
+          _statusFilter = args['statusFilter'] ?? 'Semua';
+          _sortOption = args['sortOption'] ?? 'Uptime (Shortest)';
+          _processedDashboardArgs = true; // Mark as processed
+        });
+      } else {
+        _processedDashboardArgs = true; // No args, mark as processed
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _timer?.cancel();
     _scrollController.dispose();
@@ -83,7 +105,7 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
-      backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -98,12 +120,12 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                   style: TextStyle(
                     fontWeight: FontWeight.bold, 
                     fontSize: 18,
-                    color: isDark ? Colors.white : Colors.black87,
+                    color: Colors.black87,
                   )),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              dropdownColor: isDark ? const Color(0xFF2D2D2D) : Colors.white,
+              dropdownColor: Colors.white,
               value: _sortOption,
               items: _sortOptions
                   .map((e) => DropdownMenuItem(
@@ -111,7 +133,7 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                     child: Text(
                       e,
                       style: TextStyle(
-                        color: isDark ? Colors.white : Colors.black87,
+                        color: Colors.black87,
                       ),
                     )))
                   .toList(),
@@ -119,25 +141,25 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
               decoration: InputDecoration(
                 labelText: 'Shortlist',
                 labelStyle: TextStyle(
-                  color: isDark ? Colors.white70 : Colors.black54,
+                  color: Colors.black54,
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
-                    color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                    color: Colors.grey.shade300,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
-                    color: isDark ? Colors.blue.shade300 : Colors.blue,
+                    color: Colors.blue,
                   ),
                 ),
               ),
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              dropdownColor: isDark ? const Color(0xFF2D2D2D) : Colors.white,
+              dropdownColor: Colors.white,
               value: _statusFilter,
               items: _statusOptions
                   .map((e) => DropdownMenuItem(
@@ -145,7 +167,7 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                     child: Text(
                       e,
                       style: TextStyle(
-                        color: isDark ? Colors.white : Colors.black87,
+                        color: Colors.black87,
                       ),
                     )))
                   .toList(),
@@ -153,18 +175,18 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
               decoration: InputDecoration(
                 labelText: 'Status Koneksi',
                 labelStyle: TextStyle(
-                  color: isDark ? Colors.white70 : Colors.black54,
+                  color: Colors.black54,
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
-                    color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                    color: Colors.grey.shade300,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
-                    color: isDark ? Colors.blue.shade300 : Colors.blue,
+                    color: Colors.blue,
                   ),
                 ),
               ),
@@ -203,22 +225,22 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
         expand: false,
           builder: (_, controller) => Container(
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E1E1E) : Theme.of(parentContext).scaffoldBackgroundColor,
+              color: Colors.white,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
             child: Column(
             children: [
-                Container(
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.grey.shade700 : Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                Expanded(
-                  child: ListView(
+              ),
+              Expanded(
+                child: ListView(
                     controller: controller,
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                     children: [
@@ -229,12 +251,16 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                             width: 40,
                             height: 40,
                             decoration: BoxDecoration(
-                              color: isDark ? Colors.blue.shade900 : Colors.blue.shade50,
+                              color: isOnline 
+                                ? Colors.blue.shade50
+                                : Colors.red.shade50,
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
                               Icons.person,
-                              color: isDark ? Colors.blue.shade300 : Colors.blue.shade700,
+                              color: isOnline
+                                ? Colors.blue.shade700
+                                : Colors.red.shade700,
                             ),
                   ),
                           const SizedBox(width: 12),
@@ -244,19 +270,19 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                       children: [
                                 Text(
                                   user['name'] ?? '-',
-                                style: TextStyle(
+                                style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
-                                    color: isDark ? Colors.white : Colors.black87,
+                                    color: Colors.black87,
                                   ),
                                 ),
                                 Text(
                                   user['profile'] ?? '-',
                                   style: TextStyle(
-                                    color: isDark ? Colors.white70 : Colors.grey[600],
+                                    color: Colors.grey[600],
                                     fontSize: 14,
                                   ),
-                            ),
+                                ),
                           ],
                         ),
                           ),
@@ -285,7 +311,7 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                                 style: TextStyle(
                                     fontSize: 12,
                                     color: isOnline 
-                                      ? (isDark ? Colors.green.shade300 : Colors.green) 
+                                      ? (isDark ? Colors.green.shade300 : Colors.green)
                                       : (isDark ? Colors.red.shade300 : Colors.red),
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -305,106 +331,185 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                             width: 1,
                           ),
                           borderRadius: BorderRadius.circular(12),
-                          color: isDark
-                              ? const Color(0xFF2D2D2D)
-                              : Colors.grey[50]!,
+                          color: Colors.white,
                         ),
-                  child: Column(
-                    children: [
-                            _buildDetailItem(Icons.person_outline, 'Name', user['name'] ?? '-', canCopy: true),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(12),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.info, 
+                                    color: isOnline 
+                                      ? Colors.blue[700]
+                                      : Colors.red[700],
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'User Info',
+                                    style: TextStyle(
+                                      color: isOnline 
+                                        ? Colors.blue[700]
+                                        : Colors.red[700],
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                             _buildDivider(),
-                            _buildDetailItem(Icons.lock_outline, 'Password', user['password'] ?? '-', isPassword: true),
-                            _buildDetailItem(Icons.settings_outlined, 'Service', user['service'] ?? '-'),
+                            _buildDetailItem(Icons.person_outline, 'Name', user['name'] ?? '-', 
+                              canCopy: true,
+                              iconColor: isOnline 
+                                ? (isDark ? Colors.blue.shade300 : Colors.blue.shade700)
+                                : (isDark ? Colors.red.shade300 : Colors.red.shade700),
+                            ),
                             _buildDivider(),
-                            _buildDetailItem(Icons.wifi_outlined, 'IP', user['address'] ?? '-', canCopy: true),
+                            _buildDetailItem(Icons.lock_outline, 'Password', user['password'] ?? '-', 
+                              isPassword: true,
+                              iconColor: isOnline 
+                                ? (isDark ? Colors.blue.shade300 : Colors.blue.shade700)
+                                : (isDark ? Colors.red.shade300 : Colors.red.shade700),
+                            ),
+                            _buildDetailItem(Icons.settings_outlined, 'Service', user['service'] ?? '-', 
+                              iconColor: isOnline 
+                                ? (isDark ? Colors.blue.shade300 : Colors.blue.shade700)
+                                : (isDark ? Colors.red.shade300 : Colors.red.shade700),
+                            ),
+                            _buildDivider(),
+                            _buildDetailItem(Icons.wifi_outlined, 'IP', user['address'] ?? '-', 
+                              canCopy: true,
+                              iconColor: isOnline 
+                                ? (isDark ? Colors.blue.shade300 : Colors.blue.shade700)
+                                : (isDark ? Colors.red.shade300 : Colors.red.shade700),
+                            ),
                             _buildDivider(),
                             StatefulBuilder(
                               builder: (context, setState) {
                                 return _buildDetailItem(
                                   Icons.timer_outlined, 
                                   'Uptime', 
-                                  _getRealtimeUptime(user['uptime'])
+                                  _getRealtimeUptime(user['uptime']),
+                                  iconColor: isOnline 
+                                    ? (isDark ? Colors.blue.shade300 : Colors.blue.shade700)
+                                    : (isDark ? Colors.red.shade300 : Colors.red.shade700),
                                 );
                               }
                             ),
                             if (user['caller-id'] != null && user['caller-id'].toString().isNotEmpty) ...[
                               _buildDivider(),
-                              _buildDetailItem(Icons.perm_device_info, 'MAC Address', user['caller-id'] ?? '-', canCopy: true),
+                              _buildDetailItem(Icons.perm_device_info, 'MAC Address', user['caller-id'] ?? '-', 
+                                canCopy: true,
+                                iconColor: isOnline 
+                                  ? (isDark ? Colors.blue.shade300 : Colors.blue.shade700)
+                                  : (isDark ? Colors.red.shade300 : Colors.red.shade700),
+                              ),
                             ],
                             _buildDivider(),
-                            _buildDetailItem(Icons.logout_outlined, 'Last logout', formatLastLogout(user['last-logged-out'] ?? user['last_logout'])),
+                            _buildDetailItem(Icons.logout_outlined, 'Last logout', formatLastLogout(user['last-logged-out'] ?? user['last_logout']),
+                              iconColor: isOnline 
+                                ? (isDark ? Colors.blue.shade300 : Colors.blue.shade700)
+                                : (isDark ? Colors.red.shade300 : Colors.red.shade700),
+                            ),
                             _buildDivider(),
-                            _buildDetailItem(Icons.link_off_outlined, 'Last disconnect', user['last-disconnect-reason'] ?? '-'),
+                            _buildDetailItem(Icons.link_off_outlined, 'Last disconnect', user['last-disconnect-reason'] ?? '-',
+                              iconColor: isOnline 
+                                ? (isDark ? Colors.blue.shade300 : Colors.blue.shade700)
+                                : (isDark ? Colors.red.shade300 : Colors.red.shade700),
+                            ),
                             _buildDivider(),
-                            _buildDetailItem(Icons.block_outlined, 'Disabled', user['disabled'] ?? 'false'),
+                            _buildDetailItem(Icons.block_outlined, 'Disabled', user['disabled'] ?? 'false',
+                              iconColor: isOnline 
+                                ? (isDark ? Colors.blue.shade300 : Colors.blue.shade700)
+                                : (isDark ? Colors.red.shade300 : Colors.red.shade700),
+                            ),
                             _buildDivider(),
-                            _buildDetailItem(Icons.route_outlined, 'Routes', user['routes'] ?? '-'),
-                    ],
-                  ),
-                ),
+                            _buildDetailItem(Icons.route_outlined, 'Routes', user['routes'] ?? '-',
+                              iconColor: isOnline 
+                                ? (isDark ? Colors.blue.shade300 : Colors.blue.shade700)
+                                : (isDark ? Colors.red.shade300 : Colors.red.shade700),
+                            ),
+                          ],
+                        ),
+                      ),
                       const SizedBox(height: 24),
                       Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.orange.shade900 : Colors.orange.shade50,
-                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isDark 
+                              ? Colors.grey[700]! 
+                              : Colors.grey[300]!,
+                            width: 1,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          color: Colors.white,
                         ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                            Row(
-                              children: [
-                                Icon(Icons.info_outline, color: isDark ? Colors.orange.shade300 : Colors.orange[700], size: 20),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'PPP Profile',
-                                  style: TextStyle(
-                                    color: isDark ? Colors.orange.shade300 : Colors.orange[700],
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(12),
                                 ),
-                              ],
-                            ),
-                        const SizedBox(height: 8),
-                        Text(
-                              'Rate Limit: ${profile['rate-limit'] ?? '-'}',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: isDark ? Colors.white70 : Colors.black87,
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.info_outline, 
+                                    color: Colors.orange[700],
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'PPP Profile',
+                                    style: TextStyle(
+                                      color: Colors.orange[700],
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                        Text(
-                              'DNS Server: ${profile['dns-server'] ?? '-'}',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: isDark ? Colors.white70 : Colors.black87,
-                              ),
+                            _buildDetailItem(Icons.speed, 'Rate Limit', profile['rate-limit'] ?? '-', 
+                              iconColor: isDark ? Colors.orange.shade300 : Colors.orange[700],
                             ),
-                        Text(
-                              'Local Address: ${profile['local-address'] ?? '-'}',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: isDark ? Colors.white70 : Colors.black87,
-                              ),
+                            _buildDivider(),
+                            _buildDetailItem(Icons.dns, 'DNS Server', profile['dns-server'] ?? '-', 
+                              iconColor: isDark ? Colors.orange.shade300 : Colors.orange[700],
                             ),
-                        Text(
-                              'Remote Address: ${profile['remote-address'] ?? '-'}',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: isDark ? Colors.white70 : Colors.black87,
-                              ),
+                            _buildDivider(),
+                            _buildDetailItem(Icons.router, 'Local Address', profile['local-address'] ?? '-', 
+                              iconColor: isDark ? Colors.orange.shade300 : Colors.orange[700],
                             ),
-                            if (profile['parent-queue'] != null) Text(
-                              'Parent Queue: ${profile['parent-queue']}',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: isDark ? Colors.white70 : Colors.black87,
-                              ),
+                            _buildDivider(),
+                            _buildDetailItem(Icons.public, 'Remote Address', profile['remote-address'] ?? '-', 
+                              iconColor: isDark ? Colors.orange.shade300 : Colors.orange[700],
                             ),
-                      ],
-                    ),
-                  ),
+                            if (profile['parent-queue'] != null) ...[
+                              _buildDivider(),
+                              _buildDetailItem(Icons.account_tree, 'Parent Queue', profile['parent-queue'],
+                                iconColor: isDark ? Colors.orange.shade300 : Colors.orange[700],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
                       const SizedBox(height: 24),
                       Row(
                         children: [
@@ -486,10 +591,11 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
     });
   }
 
-  Widget _buildDetailItem(IconData icon, String label, String value, {bool isPassword = false, bool canCopy = false}) {
+  Widget _buildDetailItem(IconData icon, String label, String value, {bool isPassword = false, bool canCopy = false, Color? iconColor}) {
     final ValueNotifier<bool> passwordVisible = ValueNotifier<bool>(false);
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final themeColor = isDarkMode ? Colors.blue.shade300 : Colors.blue.shade700;
+    final statusColor = iconColor ?? themeColor;
     
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
@@ -499,7 +605,7 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
           Container(
             width: 24,
             alignment: Alignment.center,
-            child: Icon(icon, size: 16, color: themeColor),
+            child: Icon(icon, size: 16, color: statusColor),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -551,7 +657,7 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                           child: Icon(
                             passwordVisible.value ? Icons.visibility_off : Icons.visibility,
                             size: 16,
-                            color: themeColor,
+                            color: statusColor,
                           ),
                         ),
                       )
@@ -577,7 +683,7 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                           child: Icon(
                             Icons.copy,
                             size: 16,
-                            color: themeColor,
+                            color: statusColor,
                           ),
                         ),
                       ),
@@ -767,31 +873,31 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
         children: [
           Expanded(
             child: Card(
-              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              color: Colors.white,
               elevation: 4,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Container(
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF2D2D2D) : Colors.white,
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   children: [
                     const SizedBox(width: 12),
-                    Icon(Icons.search, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
-                          const SizedBox(width: 8),
+                    Icon(Icons.search, color: Colors.grey.shade600),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: TextField(
-                        style: TextStyle(
-                          color: isDark ? Colors.white : Colors.black87,
+                        style: const TextStyle(
+                          color: Colors.black87,
                         ),
                         controller: _searchController,
                         decoration: InputDecoration(
                           hintText: 'Cari username...',
                           hintStyle: TextStyle(
-                            color: isDark ? Colors.grey.shade600 : Colors.grey.shade500,
+                            color: Colors.grey.shade500,
                           ),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
@@ -807,7 +913,7 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                       IconButton(
                         icon: Icon(
                           Icons.clear,
-                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                          color: Colors.grey.shade600,
                         ),
                         onPressed: () {
                           _searchController.clear();
@@ -821,31 +927,31 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
               ),
             ),
           ),
-                          const SizedBox(width: 8),
+          const SizedBox(width: 8),
           Card(
-            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+            color: Colors.white,
             elevation: 4,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
             child: Container(
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF2D2D2D) : Colors.white,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: IconButton(
                 icon: Icon(
                   Icons.filter_list,
                   color: _statusFilter != 'Semua' || _sortOption != 'Uptime (Shortest)'
-                      ? (isDark ? Colors.blue.shade300 : Colors.blue.shade800)
-                      : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+                      ? Colors.blue.shade800
+                      : Colors.grey.shade600,
                 ),
                 onPressed: _showFilterDialog,
                 tooltip: 'Filter',
-                  ),
-                ),
+              ),
+            ),
           ),
-            ],
+        ],
       ),
     );
   }
@@ -857,7 +963,7 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         extendBody: true,
-      appBar: AppBar(
+        appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
           iconTheme: const IconThemeData(color: Colors.white),
@@ -938,18 +1044,28 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
             };
           }).toList();
 
-                      // Filtering
+                      // Filtering - but don't filter out users when coming from dashboard navigation
                       List<Map<String, dynamic>> filtered = users.where((u) {
                         final q = _searchQuery.toLowerCase();
-                        if (_statusFilter == 'Online' && !u['isOnline']) {
-                          return false;
+                        // When from dashboard navigation, show all users (no status filtering)
+                        // Only apply search filter
+                        if (_processedDashboardArgs && _statusFilter != 'Semua') {
+                          // Apply only search filter, not status filter
+                          return (u['name'] ?? '').toLowerCase().contains(q) ||
+                              (u['address'] ?? '').toLowerCase().contains(q) ||
+                              (u['profile'] ?? '').toLowerCase().contains(q);
+                        } else {
+                          // Normal filtering behavior (apply both search and status filters)
+                          if (_statusFilter == 'Online' && !u['isOnline']) {
+                            return false;
+                          }
+                          if (_statusFilter == 'Offline' && u['isOnline']) {
+                            return false;
+                          }
+                          return (u['name'] ?? '').toLowerCase().contains(q) ||
+                              (u['address'] ?? '').toLowerCase().contains(q) ||
+                              (u['profile'] ?? '').toLowerCase().contains(q);
                         }
-                        if (_statusFilter == 'Offline' && u['isOnline']) {
-                          return false;
-                        }
-                        return (u['name'] ?? '').toLowerCase().contains(q) ||
-                            (u['address'] ?? '').toLowerCase().contains(q) ||
-                            (u['profile'] ?? '').toLowerCase().contains(q);
                       }).toList();
 
                       // Sorting
@@ -972,6 +1088,26 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                               _parseFlexibleUptime(a['uptime']).compareTo(
                                   _parseFlexibleUptime(b['uptime'])));
                           break;
+                        case 'Last Logout (Newest)':
+                          filtered.sort((a, b) {
+                            final aLogout = _parseLogoutDate(a['last-logged-out'] ?? a['last_logout']);
+                            final bLogout = _parseLogoutDate(b['last-logged-out'] ?? b['last_logout']);
+                            if (aLogout == null && bLogout == null) return 0;
+                            if (aLogout == null) return 1;
+                            if (bLogout == null) return -1;
+                            return bLogout.compareTo(aLogout); // DESCENDING: terbaru di atas
+                          });
+                          break;
+                        case 'Last Logout (Oldest)':
+                          filtered.sort((a, b) {
+                            final aLogout = _parseLogoutDate(a['last-logged-out'] ?? a['last_logout']);
+                            final bLogout = _parseLogoutDate(b['last-logged-out'] ?? b['last_logout']);
+                            if (aLogout == null && bLogout == null) return 0;
+                            if (aLogout == null) return 1;
+                            if (bLogout == null) return -1;
+                            return aLogout.compareTo(bLogout); // ASCENDING: terlama di atas
+                          });
+                          break;
                         case 'IP Address (A-Z)':
                           filtered.sort((a, b) => (a['address'] ?? '')
                               .compareTo(b['address'] ?? ''));
@@ -985,15 +1121,55 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
           // Pisahkan offline dan online, sort offline by last-logged-out DESC
           final offline = filtered.where((u) => u['isOnline'] != true).toList();
           final online = filtered.where((u) => u['isOnline'] == true).toList();
-          offline.sort((a, b) {
-            final aLogout = _parseLogoutDate(a['last-logged-out'] ?? a['last_logout']);
-            final bLogout = _parseLogoutDate(b['last-logged-out'] ?? b['last_logout']);
-            if (aLogout == null && bLogout == null) return 0;
-            if (aLogout == null) return 1;
-            if (bLogout == null) return -1;
-            return bLogout.compareTo(aLogout); // DESCENDING: terbaru di atas
-          });
-          final displayList = [...offline, ...online];
+          
+          // Sort offline users based on sort option
+          if (_sortOption == 'Last Logout (Newest)') {
+            offline.sort((a, b) {
+              final aLogout = _parseLogoutDate(a['last-logged-out'] ?? a['last_logout']);
+              final bLogout = _parseLogoutDate(b['last-logged-out'] ?? b['last_logout']);
+              if (aLogout == null && bLogout == null) return 0;
+              if (aLogout == null) return 1;
+              if (bLogout == null) return -1;
+              return bLogout.compareTo(aLogout); // DESCENDING: terbaru di atas
+            });
+          } else if (_sortOption == 'Last Logout (Oldest)') {
+            offline.sort((a, b) {
+              final aLogout = _parseLogoutDate(a['last-logged-out'] ?? a['last_logout']);
+              final bLogout = _parseLogoutDate(b['last-logged-out'] ?? b['last_logout']);
+              if (aLogout == null && bLogout == null) return 0;
+              if (aLogout == null) return 1;
+              if (bLogout == null) return -1;
+              return aLogout.compareTo(bLogout); // ASCENDING: terlama di atas
+            });
+          } else {
+            // Default sorting for offline users: A-Z
+            offline.sort((a, b) => (a['name'] ?? '').compareTo(b['name'] ?? ''));
+          }
+          
+          // Sort online users by uptime based on sort option
+          if (_sortOption == 'Uptime (Shortest)') {
+            online.sort((a, b) =>
+                _parseFlexibleUptime(a['uptime']).compareTo(
+                    _parseFlexibleUptime(b['uptime'])));
+          } else if (_sortOption == 'Uptime (Longest)') {
+            online.sort((a, b) =>
+                _parseFlexibleUptime(b['uptime']).compareTo(
+                    _parseFlexibleUptime(a['uptime'])));
+          }
+          
+          // Create display list based on filter - show priority users first, then others
+          // When from initial dashboard navigation, prioritize users but show all
+          final displayList = (_processedDashboardArgs && _statusFilter != 'Semua') 
+            ? (_statusFilter == 'Online' 
+                ? [...online, ...offline] 
+                : _statusFilter == 'Offline' 
+                  ? [...offline, ...online] 
+                  : [...offline, ...online])
+            : (_statusFilter == 'Online' 
+                ? [...online] 
+                : _statusFilter == 'Offline' 
+                  ? [...offline] 
+                  : [...offline, ...online]);
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1011,10 +1187,20 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                   },
                   child: Builder(
                     builder: (context) {
-                      final filteredTotal = filtered.length;
-                      final filteredActive =
-                          filtered.where((u) => u['isOnline'] == true).length;
+                      // Calculate totals
+                      final totalUsers = offline.length + online.length;
+                      final totalActive = online.length;
+                      final totalOffline = offline.length;
+                      
+                      // For filtered display (when not from initial dashboard navigation)
+                      final filteredTotal = (_processedDashboardArgs && _statusFilter != 'Semua') 
+                        ? totalUsers 
+                        : filtered.length;
+                      final filteredActive = (_processedDashboardArgs && _statusFilter != 'Semua') 
+                        ? totalActive 
+                        : filtered.where((u) => u['isOnline'] == true).length;
                       final filteredOffline = filteredTotal - filteredActive;
+                      
                       return Column(
                         children: [
                           Expanded(
@@ -1035,9 +1221,7 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                                 return Container(
                                   margin: const EdgeInsets.only(bottom: 6),
                                   decoration: BoxDecoration(
-                                    color: isOnline
-                                        ? (isDark ? const Color(0xFF1E1E1E) : Colors.white)
-                                        : (isDark ? Colors.grey[800] : Colors.grey[100]),
+                                    color: Colors.white,
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
                                       color: isOnline
@@ -1047,9 +1231,7 @@ class _SecretsActiveScreenState extends State<SecretsActiveScreen> {
                                     ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: isDark 
-                                          ? Colors.black.withValues(alpha: 0.4)
-                                          : Colors.black.withValues(alpha: 0.04),
+                                        color: Colors.black.withValues(alpha: 0.04),
                                         blurRadius: 2,
                                         offset: const Offset(0, 1),
                                       ),

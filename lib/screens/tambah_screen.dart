@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/mikrotik_provider.dart';
-import '../widgets/gradient_container.dart';
 import '../widgets/custom_snackbar.dart';
+import '../widgets/gradient_container.dart';
 import 'tambah_data_screen.dart';
 
 class TambahScreen extends StatefulWidget {
@@ -137,6 +137,7 @@ class _TambahScreenState extends State<TambahScreen> {
         barrierDismissible: false,
         builder: (context) => StatefulBuilder(
           builder: (context, setState) => Dialog(
+            backgroundColor: Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
           child: Container(
             width: MediaQuery.of(context).size.width * 0.85,
@@ -275,11 +276,12 @@ class _TambahScreenState extends State<TambahScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GradientContainer(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         extendBody: true,
-      appBar: AppBar(
+        appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
           iconTheme: const IconThemeData(color: Colors.white),

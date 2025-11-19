@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'dart:convert';
 import '../services/mikrotik_service.dart';
-import '../services/api_service.dart';
 import '../widgets/gradient_container.dart';
 import 'package:provider/provider.dart';
 import '../providers/router_session_provider.dart';
@@ -558,39 +557,22 @@ Solusi:
       await prefs.setString('password', _passwordController.text);
       await prefs.setString('router_id', routerId);
 
-      // Trigger automatic backfill of legacy rows to this routerId (fire and forget)
-      // Backfill sekarang sudah silent fail di dalam method, tidak perlu try-catch lagi
+      // Backfill dimatikan: MENYEBABKAN DATA TERPINDAH ROUTER
+      // Backfill otomatis mengubah router_id semua data legacy ke router baru
+      // ini menyebabkan data "hilang" karena ter-assign ke router yang salah
+      // 
+      // Jika perlu backfill, lakukan MANUAL via API atau perbaiki dulu logic backfill
+      // untuk TIDAK memindahkan data yang sudah punya router_id yang berbeda
+      //
       // ignore: unawaited_futures
-      ApiService.backfillRouterId(routerId: routerId);
+      // ApiService.backfillRouterId(routerId: routerId).catchError((e) {
+      //   // ignore: avoid_print
+      //   print('[LOGIN][BACKFILL] Silent fail: $e');
+      //   return <String, dynamic>{'success': false};
+      // });
 
-      // Trigger initial sync PPP secrets from Mikrotik into DB for this router (fire and forget)
-      try {
-        final secrets = await service.getPPPSecret();
-        final normalized = secrets
-            .map((s) => {
-                  'name': s['name']?.toString() ?? '',
-                  'password': s['password']?.toString() ?? '',
-                  'profile': s['profile']?.toString() ?? '',
-                })
-            .where((u) => (u['name'] as String).isNotEmpty)
-            .toList();
-        if (normalized.isNotEmpty) {
-          // Kirim per batch agar payload tidak terlalu besar (menghindari 413/HTML error)
-          const int batchSize = 100;
-          for (int i = 0; i < normalized.length; i += batchSize) {
-            final batch = normalized.sublist(i, i + batchSize > normalized.length ? normalized.length : i + batchSize);
-            try {
-              await ApiService.syncPPPUsers(
-                routerId: routerId,
-                pppUsers: batch,
-                prune: i == 0, // prune pada batch pertama agar DB hanya sesuai PPPoE
-              );
-            } catch (_) {
-              // abaikan kegagalan batch; tetap lanjut
-            }
-          }
-        }
-      } catch (_) {}
+      // Sinkronisasi PPP users dipindahkan ke halaman yang membutuhkan data database
+      // (All Users, ODP, Billing) agar login lebih cepat
 
       // Save to login history
       final loginData = {
@@ -636,337 +618,6 @@ Solusi:
         });
       }
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Check if dark mode is enabled
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return WillPopScope(
-      onWillPop: () async {
-        final shouldExit = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18)
-            ),
-            title: Row(
-              children: [
-                Icon(Icons.exit_to_app, color: Colors.red, size: 32),
-                SizedBox(width: 10),
-                Text('Keluar Aplikasi', 
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : Colors.black,
-                  )
-                ),
-              ],
-            ),
-            content: Text(
-              'Apakah Anda yakin ingin keluar dari aplikasi?',
-              style: TextStyle(
-                fontSize: 16,
-                color: isDark ? Colors.white70 : Colors.black,
-              )
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text('Batal', 
-                  style: TextStyle(
-                    color: isDark ? Colors.white70 : Colors.grey
-                  )
-                ),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)
-                  ),
-                ),
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Keluar', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
-        );
-        return shouldExit ?? false;
-      },
-      child: GradientContainer(
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          body: SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 360),
-                  child: Card(
-                    elevation: 6,
-                    color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20.0,
-                        vertical: 20.0
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const SizedBox(height: 4),
-                          // Logo Mikrotik PNG
-                          Image.asset(
-                            'assets/Mikrotik-logo.png',
-                            height: 48,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            _appVersion,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: isDark ? Colors.white70 : Colors.black38
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          TabBar(
-                            controller: _tabController,
-                            tabs: const [
-                              Tab(text: 'LOG IN'),
-                              Tab(text: 'SAVED'),
-                            ],
-                            labelColor: isDark ? Colors.blue[300] : Colors.blue,
-                            unselectedLabelColor: isDark ? Colors.white70 : Colors.black38,
-                            indicatorColor: Colors.blue,
-                            dividerColor: isDark ? Colors.grey[700] : null,
-                          ),
-                          const SizedBox(height: 20),
-                          SizedBox(
-                            height: 320,
-                            child: TabBarView(
-                              controller: _tabController,
-                              children: [
-                                // Tab 1: LOG IN
-                                SingleChildScrollView(
-                                  child: Form(
-                                    key: _formKey,
-                                    child: Column(
-                                      children: [
-                                        // IP and Port fields in a row
-                                        Row(
-                                          children: [
-                                            // IP field
-                                            Expanded(
-                                              flex: 2,
-                                              child: TextFormField(
-                                                controller: _ipController,
-                                                focusNode: _ipFocus,
-                                                keyboardType: TextInputType.number,
-                                                textInputAction: TextInputAction.next,
-                                                onFieldSubmitted: (_) {
-                                                  FocusScope.of(context).requestFocus(_portFocus);
-                                                },
-                                                decoration: InputDecoration(
-                                                  labelText: 'IP Address',
-                                                  hintText: '192.168.1.1',
-                                                  border: const UnderlineInputBorder(),
-                                                  labelStyle: TextStyle(
-                                                    color: isDark ? Colors.white70 : Colors.black54,
-                                                  ),
-                                                  hintStyle: TextStyle(
-                                                    color: isDark ? Colors.white38 : Colors.black38,
-                                                  ),
-                                                ),
-                                                style: TextStyle(
-                                                  color: isDark ? Colors.white : Colors.black,
-                                                ),
-                                                inputFormatters: [
-                                                  FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                                                ],
-                                                validator: (value) {
-                                                  if (value == null || value.isEmpty) {
-                                                    return 'Masukkan IP';
-                                                  }
-                                                  return null;
-                                                },
-                                              ),
-                                            ),
-                                            const SizedBox(width: 16),
-                                            // Port field
-                                            Expanded(
-                                              child: TextFormField(
-                                                controller: _portController,
-                                                focusNode: _portFocus,
-                                                keyboardType: TextInputType.number,
-                                                textInputAction: TextInputAction.next,
-                                                onFieldSubmitted: (_) {
-                                                  FocusScope.of(context).requestFocus(_usernameFocus);
-                                                },
-                                                decoration: InputDecoration(
-                                                  labelText: 'Port',
-                                                  hintText: '80',
-                                                  border: const UnderlineInputBorder(),
-                                                  labelStyle: TextStyle(
-                                                    color: isDark ? Colors.white70 : Colors.black54,
-                                                  ),
-                                                  hintStyle: TextStyle(
-                                                    color: isDark ? Colors.white38 : Colors.black38,
-                                                  ),
-                                                ),
-                                                style: TextStyle(
-                                                  color: isDark ? Colors.white : Colors.black,
-                                                ),
-                                                inputFormatters: [
-                                                  FilteringTextInputFormatter.digitsOnly,
-                                                ],
-                                                validator: (value) {
-                                                  if (value == null || value.isEmpty) {
-                                                    return 'Masukkan port';
-                                                  }
-                                                  return null;
-                                                },
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 16),
-                                        TextFormField(
-                                          controller: _usernameController,
-                                          focusNode: _usernameFocus,
-                                          textInputAction: TextInputAction.next,
-                                          onFieldSubmitted: (_) {
-                                            FocusScope.of(context).requestFocus(_passwordFocus);
-                                          },
-                                          decoration: InputDecoration(
-                                            labelText: 'Username',
-                                            hintText: 'admin',
-                                            border: const UnderlineInputBorder(),
-                                            labelStyle: TextStyle(
-                                              color: isDark ? Colors.white70 : Colors.black54,
-                                            ),
-                                            hintStyle: TextStyle(
-                                              color: isDark ? Colors.white38 : Colors.black38,
-                                            ),
-                                          ),
-                                          style: TextStyle(
-                                            color: isDark ? Colors.white : Colors.black,
-                                          ),
-                                          validator: (value) {
-                                            if (value == null || value.isEmpty) {
-                                              return 'Masukkan username';
-                                            }
-                                            return null;
-                                          },
-                                        ),
-                                        const SizedBox(height: 16),
-                                        TextFormField(
-                                          controller: _passwordController,
-                                          focusNode: _passwordFocus,
-                                          textInputAction: TextInputAction.done,
-                                          onFieldSubmitted: (_) {
-                                            // Just unfocus to close the keyboard
-                                            FocusScope.of(context).unfocus();
-                                          },
-                                          decoration: InputDecoration(
-                                            labelText: 'Password',
-                                            border: const UnderlineInputBorder(),
-                                            labelStyle: TextStyle(
-                                              color: isDark ? Colors.white70 : Colors.black54,
-                                            ),
-                                            suffixIcon: IconButton(
-                                              icon: Icon(_obscurePassword
-                                                  ? Icons.visibility_off
-                                                  : Icons.visibility,
-                                                  color: isDark ? Colors.white70 : Colors.black54,
-                                              ),
-                                              onPressed: () {
-                                                setState(() {
-                                                  _obscurePassword = !_obscurePassword;
-                                                });
-                                              },
-                                            ),
-                                          ),
-                                          style: TextStyle(
-                                            color: isDark ? Colors.white : Colors.black,
-                                          ),
-                                          obscureText: _obscurePassword,
-                                          validator: (value) {
-                                            if (value == null || value.isEmpty) {
-                                              return 'Masukkan password';
-                                            }
-                                            return null;
-                                          },
-                                        ),
-                                        const SizedBox(height: 38),
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: ElevatedButton(
-                                                onPressed: _isLoading ? null : _saveLogin,
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: isDark ? Colors.grey[700] : Colors.black87,
-                                                  foregroundColor: Colors.white,
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(4),
-                                                  ),
-                                                  elevation: 1,
-                                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                                ),
-                                                child: const Text('SAVE'),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Expanded(
-                                              child: ElevatedButton(
-                                                onPressed: _isLoading ? null : _login,
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: Colors.blue,
-                                                  foregroundColor: Colors.white,
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(4),
-                                                  ),
-                                                  elevation: 1,
-                                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                                ),
-                                                child: _isLoading
-                                                    ? const SizedBox(
-                                                        width: 18,
-                                                        height: 18,
-                                                        child: CircularProgressIndicator(
-                                                          strokeWidth: 2,
-                                                          color: Colors.white),
-                                                      )
-                                                    : const Text('CONNECT'),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 4),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                // Tab 2: SAVED
-                                _buildSavedLoginsTab(),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   Widget _buildSavedLoginsTab() {
@@ -1052,5 +703,364 @@ Solusi:
         },
       );
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Check if dark mode is enabled
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return WillPopScope(
+      onWillPop: () async {
+        final shouldExit = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18)
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.exit_to_app, color: Colors.red, size: 32),
+                SizedBox(width: 10),
+                Text('Keluar Aplikasi', 
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black,
+                  )
+                ),
+              ],
+            ),
+            content: Text(
+              'Apakah Anda yakin ingin keluar dari aplikasi?',
+              style: TextStyle(
+                fontSize: 16,
+                color: isDark ? Colors.white70 : Colors.black,
+              )
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text('Batal', 
+                  style: TextStyle(
+                    color: isDark ? Colors.white70 : Colors.grey
+                  )
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)
+                  ),
+                ),
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Keluar', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        );
+        return shouldExit ?? false;
+      },
+      child: Stack(
+        children: [
+          GradientContainer(
+            child: Scaffold(
+              backgroundColor: Colors.transparent,
+              body: SafeArea(
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24.0),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 360),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Card(
+                            elevation: 6,
+                            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20.0,
+                                vertical: 20.0
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const SizedBox(height: 4),
+                                  // Logo Mikrotik PNG - use different assets for light and dark mode
+                                  Image.asset(
+                                    isDark 
+                                      ? 'assets/Mikrotik-logo-white.png' 
+                                      : 'assets/Mikrotik-logo.png',
+                                    height: 48,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Mikrotik PPPoE Monitor',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontStyle: FontStyle.italic,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDark ? Colors.white70 : Colors.black38
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  TabBar(
+                                    controller: _tabController,
+                                    tabs: const [
+                                      Tab(text: 'LOG IN'),
+                                      Tab(text: 'SAVED'),
+                                    ],
+                                    labelColor: isDark ? Colors.blue[300] : Colors.blue,
+                                    unselectedLabelColor: isDark ? Colors.white70 : Colors.black38,
+                                    indicatorColor: Colors.blue,
+                                    dividerColor: isDark ? Colors.grey[700] : null,
+                                  ),
+                                  const SizedBox(height: 20),
+                                  SizedBox(
+                                    height: 320,
+                                    child: TabBarView(
+                                      controller: _tabController,
+                                      children: [
+                                        // Tab 1: LOG IN
+                                        SingleChildScrollView(
+                                          child: Form(
+                                            key: _formKey,
+                                            child: Column(
+                                              children: [
+                                                // IP and Port fields in a row
+                                                Row(
+                                                  children: [
+                                                    // IP field
+                                                    Expanded(
+                                                      flex: 2,
+                                                      child: TextFormField(
+                                                        controller: _ipController,
+                                                        focusNode: _ipFocus,
+                                                        keyboardType: TextInputType.number,
+                                                        textInputAction: TextInputAction.next,
+                                                        onFieldSubmitted: (_) {
+                                                          FocusScope.of(context).requestFocus(_portFocus);
+                                                        },
+                                                        decoration: InputDecoration(
+                                                          labelText: 'IP Address',
+                                                          hintText: '192.168.1.1',
+                                                          border: const UnderlineInputBorder(),
+                                                          labelStyle: TextStyle(
+                                                            color: isDark ? Colors.white70 : Colors.black54,
+                                                          ),
+                                                          hintStyle: TextStyle(
+                                                            color: isDark ? Colors.white38 : Colors.black38,
+                                                          ),
+                                                        ),
+                                                        style: TextStyle(
+                                                          color: isDark ? Colors.white : Colors.black,
+                                                        ),
+                                                        inputFormatters: [
+                                                          FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                                                        ],
+                                                        validator: (value) {
+                                                          if (value == null || value.isEmpty) {
+                                                            return 'Masukkan IP';
+                                                          }
+                                                          return null;
+                                                        },
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 16),
+                                                    // Port field
+                                                    Expanded(
+                                                      child: TextFormField(
+                                                        controller: _portController,
+                                                        focusNode: _portFocus,
+                                                        keyboardType: TextInputType.number,
+                                                        textInputAction: TextInputAction.next,
+                                                        onFieldSubmitted: (_) {
+                                                          FocusScope.of(context).requestFocus(_usernameFocus);
+                                                        },
+                                                        decoration: InputDecoration(
+                                                          labelText: 'Port',
+                                                          hintText: '80',
+                                                          border: const UnderlineInputBorder(),
+                                                          labelStyle: TextStyle(
+                                                            color: isDark ? Colors.white70 : Colors.black54,
+                                                          ),
+                                                          hintStyle: TextStyle(
+                                                            color: isDark ? Colors.white38 : Colors.black38,
+                                                          ),
+                                                        ),
+                                                        style: TextStyle(
+                                                          color: isDark ? Colors.white : Colors.black,
+                                                        ),
+                                                        inputFormatters: [
+                                                          FilteringTextInputFormatter.digitsOnly,
+                                                        ],
+                                                        validator: (value) {
+                                                          if (value == null || value.isEmpty) {
+                                                            return 'Masukkan port';
+                                                          }
+                                                          return null;
+                                                        },
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 16),
+                                                TextFormField(
+                                                  controller: _usernameController,
+                                                  focusNode: _usernameFocus,
+                                                  textInputAction: TextInputAction.next,
+                                                  onFieldSubmitted: (_) {
+                                                    FocusScope.of(context).requestFocus(_passwordFocus);
+                                                  },
+                                                  decoration: InputDecoration(
+                                                    labelText: 'Username',
+                                                    hintText: 'admin',
+                                                    border: const UnderlineInputBorder(),
+                                                    labelStyle: TextStyle(
+                                                      color: isDark ? Colors.white70 : Colors.black54,
+                                                    ),
+                                                    hintStyle: TextStyle(
+                                                      color: isDark ? Colors.white38 : Colors.black38,
+                                                    ),
+                                                  ),
+                                                  style: TextStyle(
+                                                    color: isDark ? Colors.white : Colors.black,
+                                                  ),
+                                                  validator: (value) {
+                                                    if (value == null || value.isEmpty) {
+                                                      return 'Masukkan username';
+                                                    }
+                                                    return null;
+                                                  },
+                                                ),
+                                                const SizedBox(height: 16),
+                                                TextFormField(
+                                                  controller: _passwordController,
+                                                  focusNode: _passwordFocus,
+                                                  textInputAction: TextInputAction.done,
+                                                  onFieldSubmitted: (_) {
+                                                    // Just unfocus to close the keyboard
+                                                    FocusScope.of(context).unfocus();
+                                                  },
+                                                  decoration: InputDecoration(
+                                                    labelText: 'Password',
+                                                    border: const UnderlineInputBorder(),
+                                                    labelStyle: TextStyle(
+                                                      color: isDark ? Colors.white70 : Colors.black54,
+                                                    ),
+                                                    suffixIcon: IconButton(
+                                                      icon: Icon(_obscurePassword
+                                                          ? Icons.visibility_off
+                                                          : Icons.visibility,
+                                                          color: isDark ? Colors.white70 : Colors.black54,
+                                                      ),
+                                                      onPressed: () {
+                                                        setState(() {
+                                                          _obscurePassword = !_obscurePassword;
+                                                        });
+                                                      },
+                                                    ),
+                                                  ),
+                                                  style: TextStyle(
+                                                    color: isDark ? Colors.white : Colors.black,
+                                                  ),
+                                                  obscureText: _obscurePassword,
+                                                  validator: (value) {
+                                                    if (value == null || value.isEmpty) {
+                                                      return 'Masukkan password';
+                                                    }
+                                                    return null;
+                                                  },
+                                                ),
+                                                const SizedBox(height: 38),
+                                                Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: ElevatedButton(
+                                                        onPressed: _isLoading ? null : _saveLogin,
+                                                        style: ElevatedButton.styleFrom(
+                                                          backgroundColor: isDark ? Colors.grey[700] : Colors.black87,
+                                                          foregroundColor: Colors.white,
+                                                          shape: RoundedRectangleBorder(
+                                                            borderRadius: BorderRadius.circular(4),
+                                                          ),
+                                                          elevation: 1,
+                                                          padding: const EdgeInsets.symmetric(vertical: 12),
+                                                        ),
+                                                        child: const Text('SAVE'),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 12),
+                                                    Expanded(
+                                                      child: ElevatedButton(
+                                                        onPressed: _isLoading ? null : _login,
+                                                        style: ElevatedButton.styleFrom(
+                                                          backgroundColor: Colors.blue,
+                                                          foregroundColor: Colors.white,
+                                                          shape: RoundedRectangleBorder(
+                                                            borderRadius: BorderRadius.circular(4),
+                                                          ),
+                                                          elevation: 1,
+                                                          padding: const EdgeInsets.symmetric(vertical: 12),
+                                                        ),
+                                                        child: _isLoading
+                                                            ? const SizedBox(
+                                                                width: 18,
+                                                                height: 18,
+                                                                child: CircularProgressIndicator(
+                                                                  strokeWidth: 2,
+                                                                  color: Colors.white),
+                                                              )
+                                                            : const Text('CONNECT'),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 4),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        // Tab 2: SAVED
+                                        _buildSavedLoginsTab(),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Version display in the footer, completely outside the card structure
+          Positioned(
+            bottom: 20,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Text(
+                _appVersion,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? Colors.white70 : Colors.black38
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

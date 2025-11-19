@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../widgets/gradient_container.dart';
 import '../services/api_service.dart' show ApiService;
 import 'edit_data_tambahan_screen.dart';
 import 'package:intl/intl.dart';
@@ -7,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
 import '../providers/router_session_provider.dart';
+import '../widgets/gradient_container.dart';
 
 class AllUsersScreen extends StatefulWidget {
   const AllUsersScreen({Key? key}) : super(key: key);
@@ -47,8 +47,10 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
   // Fungsi baru: load users dari API PHP
   Future<void> _loadUsersFromApi() async {
     if (!mounted) return;
-    final routerId = Provider.of<RouterSessionProvider>(context, listen: false).routerId;
-    if (routerId == null) {
+    final routerSession = Provider.of<RouterSessionProvider>(context, listen: false);
+    final routerId = routerSession.routerId;
+    if (routerId == null || routerSession.ip == null || routerSession.port == null || 
+        routerSession.username == null || routerSession.password == null) {
       setState(() {
         _isLoading = false;
         _error = 'Belum login atau gagal ambil router!';
@@ -60,6 +62,9 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
       _error = null;
     });
     try {
+      // Sinkronisasi sekarang dilakukan di background saat dashboard dibuka
+      // Tidak perlu sync lagi di sini, langsung ambil data dari database
+      
       final String routerIdValue = routerId;
       final data = await ApiService.getAllUsers(routerId: routerIdValue);
       if (!mounted) return;
@@ -273,7 +278,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
           expand: false,
           builder: (_, controller) => Container(
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E1E1E) : Theme.of(context).scaffoldBackgroundColor,
+              color: Colors.white,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: ListView(
@@ -286,7 +291,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.grey.shade600 : Colors.grey[300],
+                      color: Colors.grey[300],
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -295,8 +300,8 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                   children: [
                     CircleAvatar(
                       radius: 32,
-                      backgroundColor: isDark ? Colors.blue.shade900 : Colors.blue.shade50,
-                      child: Icon(Icons.person, color: isDark ? Colors.blue.shade300 : Colors.blue.shade700, size: 38),
+                      backgroundColor: Colors.blue.shade50,
+                      child: Icon(Icons.person, color: Colors.blue.shade700, size: 38),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -305,11 +310,11 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                         children: [
                           Text(
                             user['username'] ?? '-',
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
                           ),
                           Text(
                             user['profile'] ?? '-',
-                            style: TextStyle(color: isDark ? Colors.white70 : Colors.grey[600], fontSize: 15),
+                            style: TextStyle(color: Colors.grey[600], fontSize: 15),
                           ),
                         ],
                       ),
@@ -389,11 +394,11 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                 const SizedBox(height: 24),
                 Container(
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF2D2D2D) : Colors.white,
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
-                        color: isDark ? Colors.black45 : Colors.black12,
+                        color: Colors.black12,
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -402,22 +407,22 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
                   child: Column(
                     children: [
-                      _infoRow(Icons.person_outline, 'Username', user['username'] ?? '-'),
+                      _infoRow(Icons.person_outline, 'Username', user['username'] ?? '-', lightBackground: true),
                       _buildDivider(),
-                      _infoRow(Icons.lock_outline, 'Password', user['password'] ?? '-', isPassword: true),
+                      _infoRow(Icons.lock_outline, 'Password', user['password'] ?? '-', isPassword: true, lightBackground: true),
                       _buildDivider(),
-                      _infoRow(Icons.category, 'Profile', user['profile'] ?? '-'),
+                      _infoRow(Icons.category, 'Profile', user['profile'] ?? '-', lightBackground: true),
                       if (user['odp_name'] != null && user['odp_name'].isNotEmpty) ...[
                         _buildDivider(),
-                        _infoRow(Icons.call_split, 'ODP', user['odp_name']),
+                        _infoRow(Icons.call_split, 'ODP', user['odp_name'], lightBackground: true),
                       ],
                       if (user['wa']?.isNotEmpty ?? false) ...[
                         _buildDivider(),
-                        _infoRow(null, 'WA', user['wa'] ?? '-', isWA: true),
+                        _infoRow(null, 'WA', user['wa'] ?? '-', isWA: true, lightBackground: true),
                       ],
                       if (user['maps']?.isNotEmpty ?? false) ...[
                         _buildDivider(),
-                        _infoRow(null, 'Maps', user['maps'] ?? '-', isMaps: true),
+                        _infoRow(null, 'Maps', user['maps'] ?? '-', isMaps: true, lightBackground: true),
                       ],
                       if (user['tanggal_dibuat']?.isNotEmpty ?? false) ...[
                         _buildDivider(),
@@ -431,6 +436,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                                 }
                               })()
                             : '-',
+                          lightBackground: true,
                         ),
                       ],
                     ],
@@ -592,15 +598,16 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
   }
 
   // Tambahkan fungsi _infoRow untuk tampilan modern
-  Widget _infoRow(IconData? icon, String label, String value, {bool isPassword = false, bool isWA = false, bool isMaps = false}) {
+  Widget _infoRow(IconData? icon, String label, String value, {bool isPassword = false, bool isWA = false, bool isMaps = false, bool lightBackground = false}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final useDark = lightBackground ? false : isDark;
     Widget? leadingIcon;
     if (isWA) {
       leadingIcon = Image.asset('assets/WhatsApp.svg.png', width: 22, height: 22);
     } else if (isMaps) {
       leadingIcon = Image.asset('assets/pngimg.com - google_maps_pin_PNG26.png', width: 22, height: 22);
     } else if (icon != null) {
-      leadingIcon = Icon(icon, color: isDark ? Colors.blue.shade300 : Colors.blueAccent, size: 22);
+      leadingIcon = Icon(icon, color: useDark ? Colors.blue.shade300 : Colors.blueAccent, size: 22);
     }
 
     Widget valueWidget;
@@ -613,7 +620,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
             Expanded(
               child: Text(
                 isObscure ? '••••••••' : value,
-                style: TextStyle(fontSize: 15, color: isDark ? Colors.white70 : Colors.black54),
+                style: TextStyle(fontSize: 15, color: useDark ? Colors.white70 : Colors.black54),
                 overflow: TextOverflow.visible,
                 maxLines: null,
               ),
@@ -623,7 +630,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
               child: Icon(
                 isObscure ? Icons.visibility_off : Icons.visibility,
                 size: 18,
-                color: isDark ? Colors.white70 : Colors.grey,
+                color: useDark ? Colors.white70 : Colors.grey,
               ),
             ),
           ],
@@ -635,8 +642,8 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
         style: TextStyle(
           fontSize: 15,
           color: isWA || isMaps 
-            ? (isDark ? Colors.blue.shade300 : Colors.blue) 
-            : (isDark ? Colors.white70 : Colors.black87),
+            ? (useDark ? Colors.blue.shade300 : Colors.blue) 
+            : (useDark ? Colors.white70 : Colors.black87),
           decoration: isWA || isMaps ? TextDecoration.underline : TextDecoration.none,
         ),
         overflow: TextOverflow.visible,
@@ -704,7 +711,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
             leadingIcon,
             const SizedBox(width: 10),
           ],
-          Text('${label}:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: isDark ? Colors.white : Colors.black87)),
+          Text('${label}:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: useDark ? Colors.white : Colors.black87)),
           const SizedBox(width: 8),
           Expanded(child: valueWidget),
         ],
@@ -750,24 +757,24 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               child: Card(
-                color: Theme.of(context).cardColor,
+                color: Colors.white,
                 elevation: 4,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: TextField(
                   controller: _searchController,
-                  style: TextStyle(
-                    color: Theme.of(context).textTheme.bodyLarge?.color
+                  style: const TextStyle(
+                    color: Colors.black87
                   ),
                   decoration: InputDecoration(
                     hintText: 'Cari user...',
-                    hintStyle: TextStyle(
-                      color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.7)
+                    hintStyle: const TextStyle(
+                      color: Colors.black54
                     ),
                     prefixIcon: Icon(
                       Icons.search,
-                      color: Theme.of(context).iconTheme.color,
+                      color: Colors.black54,
                     ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -775,7 +782,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                         ? IconButton(
                             icon: Icon(
                               Icons.clear,
-                              color: Theme.of(context).iconTheme.color,
+                              color: Colors.black54,
                             ),
                             onPressed: () {
                               setState(() {
@@ -858,7 +865,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                                           borderRadius: BorderRadius.circular(14),
                                           side: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade200, width: 1),
                                         ),
-                                        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                                        color: Colors.white,
                                         child: Padding(
                                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                           child: Row(
@@ -878,12 +885,12 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                                                       style: TextStyle(
                                                         fontWeight: FontWeight.bold,
                                                         fontSize: 15,
-                                                        color: isDark ? Colors.white : Colors.black87,
+                                                        color: Colors.black87,
                                                       ),
                                                     ),
                                                     Text(
                                                       'Profile: ${user['profile']}',
-                                                      style: TextStyle(fontSize: 13, color: isDark ? Colors.white70 : Colors.black54),
+                                                      style: const TextStyle(fontSize: 13, color: Colors.black54),
                                                     ),
                                                     if (user['odp_name']?.isNotEmpty ?? false)
                                                       Row(
@@ -892,7 +899,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                                                           const SizedBox(width: 4),
                                                           Text(
                                                             'ODP: ${user['odp_name']}',
-                                                            style: TextStyle(fontSize: 12, color: isDark ? Colors.white : Colors.black),
+                                                            style: const TextStyle(fontSize: 12, color: Colors.black),
                                                             overflow: TextOverflow.visible,
                                                             maxLines: null,
                                                           ),
@@ -903,7 +910,8 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                                                         children: [
                                                           Image.asset('assets/WhatsApp.svg.png', width: 16, height: 16),
                                                           const SizedBox(width: 4),
-                                                          Text('WA: ${user['wa']}', style: TextStyle(fontSize: 12, color: isDark ? Colors.white : Colors.black)),
+                                                          const Text('WA: ', style: TextStyle(fontSize: 12, color: Colors.black)),
+                                                          Text('${user['wa']}', style: const TextStyle(fontSize: 12, color: Colors.black)),
                                                         ],
                                                       ),
                                                     if (user['maps']?.isNotEmpty ?? false)
@@ -914,7 +922,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                                                           Flexible(
                                                             child: Text(
                                                               'Maps: ${user['maps']}',
-                                                              style: TextStyle(fontSize: 12, color: isDark ? Colors.white : Colors.black),
+                                                              style: const TextStyle(fontSize: 12, color: Colors.black),
                                                               overflow: TextOverflow.ellipsis,
                                                             ),
                                                           ),

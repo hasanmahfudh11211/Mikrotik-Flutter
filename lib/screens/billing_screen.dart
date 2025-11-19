@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../widgets/gradient_container.dart';
@@ -72,7 +73,8 @@ class _BillingScreenState extends State<BillingScreen> {
       _error = null;
       // Clear cache when manually refreshing
       ApiService.clearCache();
-      final routerId = Provider.of<RouterSessionProvider>(context, listen: false).routerId;
+      final routerSession = Provider.of<RouterSessionProvider>(context, listen: false);
+      final routerId = routerSession.routerId;
       if (routerId == null) {
         setState(() {
           _error = 'Silakan login router ulang (serial-number tidak ditemukan)';
@@ -80,6 +82,9 @@ class _BillingScreenState extends State<BillingScreen> {
         });
         return;
       }
+      
+      // Sinkronisasi sekarang dilakukan di background saat dashboard dibuka
+      // Langsung ambil data dari database
       _usersFuture = ApiService.fetchAllUsersWithPayments(routerId: routerId).then((data) {
         _users = data;
         return data;
@@ -448,7 +453,7 @@ class _BillingScreenState extends State<BillingScreen> {
               constraints: const BoxConstraints(maxWidth: 420),
               child: Container(
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E1E1E) : Theme.of(context).scaffoldBackgroundColor,
+                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 child: ListView(
@@ -975,7 +980,7 @@ class _BillingScreenState extends State<BillingScreen> {
                     Text(
                       'Tidak ada user ditemukan.',
                       style: TextStyle(
-                        color: isDark ? Colors.white70 : Colors.black54,
+                        color: isDark ? Colors.white : Colors.black54,
                         fontSize: 16,
                       ),
                     ),
@@ -997,87 +1002,98 @@ class _BillingScreenState extends State<BillingScreen> {
             final users = _filteredSortedUsers();
             return Column(
               children: [
+                // Search Bar
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF2D2D2D) : Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: isDark ? Colors.black26 : Colors.grey.withOpacity(0.1),
+                                blurRadius: 2,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          child: TextField(
+                            controller: _searchUserController,
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Cari...',
+                              hintStyle: TextStyle(
+                                color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.search,
+                                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                size: 20,
+                              ),
+                              suffixIcon: _searchQuery.isNotEmpty
+                                  ? IconButton(
+                                      icon: Icon(
+                                        Icons.clear,
+                                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                        size: 20,
+                                      ),
+                                      onPressed: () {
+                                        _searchUserController.clear();
+                                        setState(() {
+                                          _searchQuery = '';
+                                        });
+                                      },
+                                    )
+                                  : null,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                              border: InputBorder.none,
+                            ),
+                            onChanged: (value) {
+                              setState(() {
+                                _searchQuery = value;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF2D2D2D) : Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Tooltip(
+                          message: _showFilterPanel ? 'Sembunyikan filter' : 'Tampilkan filter',
+                          child: IconButton(
+                            icon: Icon(
+                              _showFilterPanel ? Icons.filter_alt_off : Icons.filter_alt, 
+                              color: isDark ? Colors.blue.shade300 : Colors.blue.shade700, 
+                              size: 24
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _showFilterPanel = !_showFilterPanel;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 // FILTER GLOBAL
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Search bar + tombol filter satu baris
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF2D2D2D) : Colors.white,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: TextField(
-                                controller: _searchUserController,
-                                style: TextStyle(
-                                  color: isDark ? Colors.white : Colors.black87,
-                                ),
-                                decoration: InputDecoration(
-                                  hintText: 'Cari...',
-                                  hintStyle: TextStyle(
-                                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
-                                  ),
-                                  prefixIcon: Icon(
-                                    Icons.search, 
-                                    size: 18,
-                                    color: isDark ? Colors.grey.shade400 : null,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
-                                  border: InputBorder.none,
-                                  isDense: true,
-                                  suffixIcon: _searchQuery.isNotEmpty
-                                      ? IconButton(
-                                          icon: Icon(
-                                            Icons.clear, 
-                                            size: 18,
-                                            color: isDark ? Colors.grey.shade400 : null,
-                                          ),
-                                          onPressed: () {
-                                            _searchUserController.clear();
-                                            setState(() {
-                                              _searchQuery = '';
-                                            });
-                                          },
-                                        )
-                                      : null,
-                                ),
-                                onChanged: (v) {
-                                  if (mounted) {
-                                    setState(() => _searchQuery = v);
-                                  }
-                                },
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF2D2D2D) : Colors.white,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Tooltip(
-                              message: _showFilterPanel ? 'Sembunyikan filter' : 'Tampilkan filter',
-                              child: IconButton(
-                                icon: Icon(
-                                  _showFilterPanel ? Icons.filter_alt_off : Icons.filter_alt, 
-                                  color: isDark ? Colors.blue.shade300 : Colors.blue.shade700, 
-                                  size: 24
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    _showFilterPanel = !_showFilterPanel;
-                                  });
-                                },
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      // Tombol filter satu baris
+                     
                       const SizedBox(height: 8),
                       // Panel filter (expand/collapse)
                       AnimatedCrossFade(
@@ -1226,139 +1242,167 @@ class _BillingScreenState extends State<BillingScreen> {
                 ),
                 // END FILTER GLOBAL
                 Expanded(
-                  child: RefreshIndicator(
-                    onRefresh: () async => _loadUsers(),
-                    child: ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                      itemCount: users.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 12),
-                      itemBuilder: (context, i) {
-                        final user = users[i];
-                        // Status lunas/Belum harus sesuai bulan yang dipilih
-                        // (_showAllPayments hanya mempengaruhi popup, bukan status card)
-                        
-                        return GestureDetector(
-                          onTap: () => _showBillingDetailSheet(user),
-                          child: Card(
-                            elevation: 2,
-                            margin: EdgeInsets.zero,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              side: BorderSide(
-                                color: _hasUserPaidForSelectedMonth(user) 
-                                  ? (isDark ? Colors.green.shade700 : Colors.green.shade100) 
-                                  : (isDark ? Colors.red.shade700 : Colors.red.shade100), 
-                                width: 1.2
-                              ),
-                            ),
-                            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                              child: Row(
-                                children: [
-                                  CircleAvatar(
-                                    radius: 22,
-                                    backgroundColor: _hasUserPaidForSelectedMonth(user) 
-                                      ? (isDark ? Colors.green.shade900 : Colors.green.shade50) 
-                                      : (isDark ? Colors.red.shade900 : Colors.red.shade50),
-                                    child: Icon(
-                                      Icons.payments, 
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: RefreshIndicator(
+                          onRefresh: () async => _loadUsers(),
+                          child: ListView.separated(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                            itemCount: users.length,
+                            separatorBuilder: (context, index) => const SizedBox(height: 12),
+                            itemBuilder: (context, i) {
+                              final user = users[i];
+                              // Status lunas/Belum harus sesuai bulan yang dipilih
+                              // (_showAllPayments hanya mempengaruhi popup, bukan status card)
+                              
+                              return GestureDetector(
+                                onTap: () => _showBillingDetailSheet(user),
+                                child: Card(
+                                  elevation: 2,
+                                  margin: EdgeInsets.zero,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    side: BorderSide(
                                       color: _hasUserPaidForSelectedMonth(user) 
-                                        ? (isDark ? Colors.green.shade300 : Colors.green) 
-                                        : (isDark ? Colors.red.shade300 : Colors.red), 
-                                      size: 26
+                                        ? (isDark ? Colors.green.shade700 : Colors.green.shade100) 
+                                        : (isDark ? Colors.red.shade700 : Colors.red.shade100), 
+                                      width: 1.2
                                     ),
                                   ),
-                                  const SizedBox(width: 14),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                    child: Row(
                                       children: [
-                                        Text(
-                                          user['username'] ?? '-',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold, 
-                                            fontSize: 16,
-                                            color: isDark ? Colors.white : Colors.black87,
+                                        CircleAvatar(
+                                          radius: 22,
+                                          backgroundColor: _hasUserPaidForSelectedMonth(user) 
+                                            ? (isDark ? Colors.green.shade900 : Colors.green.shade50) 
+                                            : (isDark ? Colors.red.shade900 : Colors.red.shade50),
+                                          child: Icon(
+                                            Icons.payments, 
+                                            color: _hasUserPaidForSelectedMonth(user) 
+                                              ? (isDark ? Colors.green.shade300 : Colors.green) 
+                                              : (isDark ? Colors.red.shade300 : Colors.red), 
+                                            size: 26
                                           ),
                                         ),
-                                        if (user['profile'] != null)
-                                          Text(
-                                            'Profile: ${user['profile']}', 
-                                            style: TextStyle(
-                                              fontSize: 13, 
-                                              color: isDark ? Colors.white70 : Colors.black54
-                                            )
+                                        const SizedBox(width: 14),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                user['username'] ?? '-',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold, 
+                                                  fontSize: 16,
+                                                  color: isDark ? Colors.white : Colors.black87,
+                                                ),
+                                              ),
+                                              if (user['profile'] != null)
+                                                Text(
+                                                  'Profile: ${user['profile']}', 
+                                                  style: TextStyle(
+                                                    fontSize: 13, 
+                                                    color: isDark ? Colors.white70 : Colors.black54
+                                                  )
+                                                ),
+                                              if (user['nominal'] != null)
+                                                Text(
+                                                  'Tagihan: Rp ${currencyFormat.format(double.tryParse(user['nominal']) ?? 0)}',
+                                                  style: TextStyle(
+                                                    fontSize: 13, 
+                                                    color: isDark ? Colors.orange.shade300 : Colors.deepOrange, 
+                                                    fontWeight: FontWeight.w600
+                                                  )
+                                                ),
+                                            ],
                                           ),
-                                        if (user['nominal'] != null)
-                                          Text(
-                                            'Tagihan: Rp ${currencyFormat.format(double.tryParse(user['nominal']) ?? 0)}',
-                                            style: TextStyle(
-                                              fontSize: 13, 
-                                              color: isDark ? Colors.orange.shade300 : Colors.deepOrange, 
-                                              fontWeight: FontWeight.w600
-                                            )
-                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            CircleAvatar(
+                                              radius: 16,
+                                              backgroundColor: _hasUserPaidForSelectedMonth(user) 
+                                                ? (isDark ? Colors.green.shade700 : Colors.green) 
+                                                : (isDark ? Colors.red.shade700 : Colors.red),
+                                              child: Icon(
+                                                _hasUserPaidForSelectedMonth(user) ? Icons.check : Icons.close,
+                                                color: Colors.white,
+                                                size: 20,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: _hasUserPaidForSelectedMonth(user) 
+                                                  ? (isDark ? Colors.green.shade900 : Colors.green.shade50) 
+                                                  : (isDark ? Colors.red.shade900 : Colors.red.shade50),
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                              child: Text(
+                                                _hasUserPaidForSelectedMonth(user) ? 'Lunas' : 'Belum',
+                                                style: TextStyle(
+                                                  color: _hasUserPaidForSelectedMonth(user) 
+                                                    ? (isDark ? Colors.green.shade300 : Colors.green) 
+                                                    : (isDark ? Colors.red.shade300 : Colors.red),
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ],
                                     ),
                                   ),
-                                  const SizedBox(width: 10),
-                                  Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 16,
-                                        backgroundColor: _hasUserPaidForSelectedMonth(user) 
-                                          ? (isDark ? Colors.green.shade700 : Colors.green) 
-                                          : (isDark ? Colors.red.shade700 : Colors.red),
-                                        child: Icon(
-                                          _hasUserPaidForSelectedMonth(user) ? Icons.check : Icons.close,
-                                          color: Colors.white,
-                                          size: 20,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: _hasUserPaidForSelectedMonth(user) 
-                                            ? (isDark ? Colors.green.shade900 : Colors.green.shade50) 
-                                            : (isDark ? Colors.red.shade900 : Colors.red.shade50),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Text(
-                                          _hasUserPaidForSelectedMonth(user) ? 'Lunas' : 'Belum',
-                                          style: TextStyle(
-                                            color: _hasUserPaidForSelectedMonth(user) 
-                                              ? (isDark ? Colors.green.shade300 : Colors.green) 
-                                              : (isDark ? Colors.red.shade300 : Colors.red),
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                // Footer: jumlah user
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Text(
-                    'Total User: ${users.length}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w500,
-                      fontSize: 14,
-                      color: isDark ? Colors.white : Colors.black87,
-                    ),
-                    textAlign: TextAlign.center,
+                        ),
+                      ),
+                      // Footer: jumlah user dan total pembayaran
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.people,
+                                color: isDark ? Colors.white70 : Colors.black54, size: 18),
+                            const SizedBox(width: 4),
+                            Text('${users.length} total',
+                                style: TextStyle(
+                                    color: isDark ? Colors.white : Colors.black87, fontSize: 14)),
+                            const Text(' | ',
+                                style: TextStyle(fontSize: 14)),
+                            Icon(Icons.check_circle,
+                                color: isDark ? Colors.green.shade300 : Colors.green, size: 18),
+                            const SizedBox(width: 4),
+                            Text('${users.length - _countUnpaidUsers()} paid',
+                                style: TextStyle(
+                                    color: isDark ? Colors.green.shade300 : Colors.green,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold)),
+                            const Text(' | ',
+                                style: TextStyle(fontSize: 14)),
+                            Icon(Icons.cancel, 
+                                color: isDark ? Colors.red.shade300 : Colors.red, size: 18),
+                            const SizedBox(width: 4),
+                            Text('${_countUnpaidUsers()} unpaid',
+                                style: TextStyle(
+                                    color: isDark ? Colors.red.shade300 : Colors.red,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -1369,20 +1413,23 @@ class _BillingScreenState extends State<BillingScreen> {
     );
   }
 
+  // Fixed syntax errors
   Widget _buildMethodChip(String method) {
+    // Additional comment
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    // More comments
     Color color = method.toLowerCase() == 'cash' ? Colors.green : Colors.blue;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: isDark 
-          ? color.withValues(alpha: 0.1) 
-          : color.withValues(alpha: 0.1),
+          ? color.withOpacity(0.1) 
+          : color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isDark 
-            ? color.withValues(alpha: 0.3) 
-            : color.withValues(alpha: 0.3)
+            ? color.withOpacity(0.3) 
+            : color.withOpacity(0.3)
         ),
       ),
       child: Text(
@@ -1957,10 +2004,13 @@ class _BillingScreenState extends State<BillingScreen> {
       }).toList();
     }
     
-    // Urutkan berdasarkan username A-Z
+    // Urutkan berdasarkan username A-Z saja (seperti sebelumnya)
     filtered.sort((a, b) => (a['username'] ?? '').compareTo(b['username'] ?? ''));
     return filtered;
   }
+
+
+
   
   // Method to check if user has paid for the selected month
   bool _hasUserPaidForSelectedMonth(Map<String, dynamic> user) {
@@ -1973,7 +2023,7 @@ class _BillingScreenState extends State<BillingScreen> {
         paymentDate.month == _selectedMonth.month;
     });
   }
-  
+
   String formatLastLogout(String? lastLogout) {
     if (lastLogout == null || lastLogout.isEmpty) {
       return '-';
@@ -1987,61 +2037,16 @@ class _BillingScreenState extends State<BillingScreen> {
     }
   }
   
-  String _getRealtimeUptime(String? uptime) {
-    if (uptime == null || uptime.isEmpty) return '0s';
-    
-    // Parse uptime string like "1d2h3m4s"
-    final regex = RegExp(r'((\d+)w)?((\d+)d)?((\d+)h)?((\d+)m)?((\d+)s)?');
-    final match = regex.firstMatch(uptime);
-    if (match == null) return uptime;
-    
-    int w = int.tryParse(match.group(2) ?? '0') ?? 0;
-    int d = int.tryParse(match.group(4) ?? '0') ?? 0;
-    int h = int.tryParse(match.group(6) ?? '0') ?? 0;
-    int m = int.tryParse(match.group(8) ?? '0') ?? 0;
-    int s = int.tryParse(match.group(10) ?? '0') ?? 0;
-    
-    // Convert to total seconds
-    int totalSeconds = w * 604800 + d * 86400 + h * 3600 + m * 60 + s;
-    
-    // Add current session time
-    final now = DateTime.now();
-    // In a real app, you would track when the session started
-    // For now, we'll just return the parsed uptime
-    return uptime;
-  }
+
   
-  DateTime? _parseLogoutDate(String? logoutStr) {
-    if (logoutStr == null || logoutStr.isEmpty) return null;
-    try {
-      return DateTime.parse(logoutStr);
-    } catch (e) {
-      return null;
+  int _countUnpaidUsers() {
+    int count = 0;
+    for (var user in _filteredSortedUsers()) {
+      if (!_hasUserPaidForSelectedMonth(user)) {
+        count++;
+      }
     }
-  }
-  
-  int _parseFlexibleUptime(String? uptime) {
-    if (uptime == null || uptime.isEmpty) return 0;
-    
-    // Handle different uptime formats
-    if (uptime.contains('w') || uptime.contains('d') || uptime.contains('h') || 
-        uptime.contains('m') || uptime.contains('s')) {
-      // Parse format like "1w2d3h4m5s"
-      final regex = RegExp(r'((\d+)w)?((\d+)d)?((\d+)h)?((\d+)m)?((\d+)s)?');
-      final match = regex.firstMatch(uptime);
-      if (match == null) return 0;
-      
-      int w = int.tryParse(match.group(2) ?? '0') ?? 0;
-      int d = int.tryParse(match.group(4) ?? '0') ?? 0;
-      int h = int.tryParse(match.group(6) ?? '0') ?? 0;
-      int m = int.tryParse(match.group(8) ?? '0') ?? 0;
-      int s = int.tryParse(match.group(10) ?? '0') ?? 0;
-      
-      return w * 604800 + d * 86400 + h * 3600 + m * 60 + s;
-    } else {
-      // Try to parse as seconds
-      return int.tryParse(uptime) ?? 0;
-    }
+    return count;
   }
   
   @override
@@ -2050,3 +2055,4 @@ class _BillingScreenState extends State<BillingScreen> {
     super.dispose();
   }
 }
+

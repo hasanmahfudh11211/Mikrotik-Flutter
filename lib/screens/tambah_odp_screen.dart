@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../widgets/gradient_container.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../services/api_service.dart';
 import '../providers/router_session_provider.dart';
+import '../widgets/gradient_container.dart';
 
 class TambahODPScreen extends StatefulWidget {
   final Map<String, dynamic>? odpToEdit;
@@ -158,20 +158,20 @@ class _TambahODPScreenState extends State<TambahODPScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return GradientContainer(
       child: Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          centerTitle: true,
-          title: Text(
-            widget.odpToEdit != null ? 'Edit ODP' : 'Tambah ODP',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
+        elevation: 0,
+        centerTitle: true,
+        title: Text(
+          widget.odpToEdit != null ? 'Edit ODP' : 'Tambah ODP',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
           ),
-          iconTheme: const IconThemeData(color: Colors.white),
         ),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(
