@@ -20,13 +20,11 @@ workflows:
           mkdir Payload
           cp -r Runner.app Payload/
           zip -r Runner-unsigned.ipa Payload
-
     artifacts:
       - build/ios/iphoneos/Runner.app
       - build/ios/iphoneos/Payload
       - build/ios/iphoneos/Runner-unsigned.ipa
-
     publishing:
       email:
         recipients:
-          - $BUILD_TRIGGER_EMAIL
+          - hasanmahfudh112@gmail.com
