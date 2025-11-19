@@ -9,19 +9,14 @@ workflows:
         - android-signing
 
     scripts:
-      # Decode keystore dari BASE64 ke file .jks
       - name: Decode keystore (Base64 → .jks)
         script: |
-          echo "$ANDROID_KEYSTORE" | base64 --decode > android/app/key.jks
+          echo $ANDROID_KEYSTORE | base64 --decode > android/app/key.jks
 
-      # Install dependency Flutter
       - name: Install dependencies
         script: |
           flutter pub get
 
-      # -----------------------
-      # ANDROID SIGNED BUILDS
-      # -----------------------
       - name: Set up Android signing
         script: |
           echo "storePassword=$ANDROID_KEYSTORE_PASSWORD" > android/key.properties
@@ -37,9 +32,6 @@ workflows:
         script: |
           flutter build appbundle --release
 
-      # -----------------------
-      # IOS UNSIGNED BUILD
-      # -----------------------
       - name: Build iOS (Unsigned)
         script: |
           flutter build ios --release --no-codesign
@@ -52,11 +44,8 @@ workflows:
           zip -r Runner-unsigned.ipa Payload
 
     artifacts:
-      # Android signed
       - build/app/outputs/flutter-apk/app-release.apk
       - build/app/outputs/bundle/release/app-release.aab
-
-      # iOS unsigned
       - build/ios/iphoneos/Runner.app
       - build/ios/iphoneos/Payload
       - build/ios/iphoneos/Runner-unsigned.ipa
