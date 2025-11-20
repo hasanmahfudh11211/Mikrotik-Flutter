@@ -1,0 +1,27 @@
+workflows:
+  ios-simulator-build:
+    name: Build iOS Simulator (Appetize.io)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      - name: Install CocoaPods
+        script: |
+          find . -name "Podfile" -execdir pod install \;
+      - name: Build iOS Simulator
+        script: |
+          # FLAG PENTING: --simulator dan --debug
+          # Ini memaksa Flutter membuat file khusus arsitektur x86_64/arm64 simulator
+          flutter build ios --debug --simulator --no-codesign
+    artifacts:
+      - build/ios/iphonesimulator/*.app # Mengambil file hasil build dari folder simulator
+    publishing:
+      email:
+        recipients:
+          - hasanmahfudh11211@gmail.com # Email notifikasi (opsional)
